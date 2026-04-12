@@ -7160,13 +7160,19 @@ function handleGoogleLogin(response) {
         })
         .catch(function(err) {
           console.error('SiteBook: Drive config load failed after login:', err.message);
-          // If we have a full working config already, launch anyway
+          // If we have a full working config already in localStorage, launch anyway
           if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
             console.warn('SiteBook: Using cached cfg as fallback');
             launchApp();
+          } else if (cfg.sheetId && cfg.scriptUrl) {
+            // Have credentials but setupDone not set — still launch
+            cfg.setupDone = true;
+            saveCfg();
+            launchApp();
           } else {
-            toast('Config load failed — please re-enter script URL', 'err');
-            showSetupScreen();
+            // No config at all — ask for script URL
+            toast('Script URL enter చేయండి', 'info');
+            showScriptUrlPrompt();
           }
         });
     } else if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
