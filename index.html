@@ -7491,10 +7491,15 @@ function toggleEmiPaid(loanId, origDate) {
     entry = { id:'sch_'+Date.now(), loanId:loanId, origDate:origDate, date:origDate, amount:loan.emi||0, paid:false, interestPart:0, principalPart:0 };
     state.emiSchedule.push(entry);
   }
-  entry.paid = !entry.paid;
-  if (entry.paid) {
-    // Calculate interest/principal split based on current outstanding balance (bank logic)
-    var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
+  // Check loanPayments as source of truth
+  if (!state.loanPayments) state.loanPayments = [];
+  var existingEmiPmt = state.loanPayments.find(function(p){ return p.loanId===loanId && p.isEmi && p.emiOrigDate===origDate; });
+  var isCurrentlyPaid = !!existingEmiPmt;
+
+  if (!isCurrentlyPaid) {
+    // Mark as paid — calculate interest/principal split
+    entry.paid = true;
+    var existingPmts = state.loanPayments.filter(function(p){ return p.loanId===loanId; });
     var paidPrin = existingPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
     var outstandingBal = Math.max(Number(loan.principal||0) - paidPrin, 0);
     var mRate = loan.rateType==='pm' ? Number(loan.rate||0)/100
@@ -7510,7 +7515,6 @@ function toggleEmiPaid(loanId, origDate) {
     // Create payment with NEW schema: principalAmount, interestAmount
     var pmt = { id:'pmt_emi_'+Date.now(), loanId:loanId, date:entry.date, type:'emi',
                 principalAmount:prinPart, interestAmount:intPart, notes:'EMI', isEmi:true, emiOrigDate:origDate };
-    if (!state.loanPayments) state.loanPayments=[];
     state.loanPayments.push(pmt);
     entry.pmtId = pmt.id;
     pushToSheet('LoanPayments',
@@ -7518,10 +7522,13 @@ function toggleEmiPaid(loanId, origDate) {
       [pmt.id, pmt.loanId, pmt.date, 'emi', prinPart, intPart, 'EMI']
     );
   } else {
-    if (entry.pmtId) {
-      state.loanPayments = (state.loanPayments||[]).filter(function(p){return p.id!==entry.pmtId;});
-      entry.pmtId = null;
-    }
+    // Mark as unpaid — remove existing EMI payment
+    entry.paid = false;
+    var pmtIdToRemove = existingEmiPmt.id;
+    state.loanPayments = state.loanPayments.filter(function(p){return p.id!==pmtIdToRemove;});
+    entry.pmtId = null;
+    // Also remove from sheet if possible
+    if (typeof deleteFromSheet === 'function') deleteFromSheet('LoanPayments', pmtIdToRemove);
   }
   saveData();
   renderLoanList();
@@ -7978,26 +7985,31 @@ function renderLoanList() {
       while (d <= toD) {
         var dStr = d.toISOString().slice(0,10);
         var sch = schedForLoan.find(function(s){return s.origDate===dStr;}) || {origDate:dStr, date:dStr, amount:loan.emi, paid:false, interestPart:0, principalPart:0};
-        // Calculate interest/principal if not stored
-        if (!sch.interestPart && !sch.principalPart && sch.amount) {
-          var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loan.id && !p.isEmi; });
-          var paidPrin = existingPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
-          var outstandingBal = Math.max(Number(loan.principal||0) - paidPrin, 0);
+        // Use loanPayments as source of truth for paid status
+        var existingEmiPmt = (state.loanPayments||[]).find(function(p){ return p.loanId===loan.id && p.isEmi && p.emiOrigDate===dStr; });
+        var isPaid = !!existingEmiPmt;
+        var intPartDisplay = existingEmiPmt ? Number(existingEmiPmt.interestAmount||0) : (sch.interestPart||0);
+        var prinPartDisplay = existingEmiPmt ? Number(existingEmiPmt.principalAmount||0) : (sch.principalPart||0);
+        // Calculate interest/principal for display if not stored
+        if (!intPartDisplay && !prinPartDisplay && sch.amount) {
+          var existingNonEmiPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loan.id && !p.isEmi; });
+          var paidPrinNE = existingNonEmiPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
+          var outstandingBal = Math.max(Number(loan.principal||0) - paidPrinNE, 0);
           var mRate = loan.rateType==='pm' ? Number(loan.rate||0)/100
                     : loan.rateType==='pa' ? Number(loan.rate||0)/100/12
                     : 0;
-          sch.interestPart = (loan.rateType==='0' || !loan.rate) ? 0
-                           : loan.rateType==='flat' ? Number(loan.rate||0)
-                           : Math.round(outstandingBal * mRate);
-          sch.interestPart = Math.min(sch.interestPart, sch.amount);
-          sch.principalPart = Math.max(sch.amount - sch.interestPart, 0);
+          intPartDisplay = (loan.rateType==='0' || !loan.rate) ? 0
+                         : loan.rateType==='flat' ? Number(loan.rate||0)
+                         : Math.round(outstandingBal * mRate);
+          intPartDisplay = Math.min(intPartDisplay, sch.amount);
+          prinPartDisplay = Math.max(sch.amount - intPartDisplay, 0);
         }
         html += '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr;gap:3px;align-items:center;margin-bottom:3px">'
           +'<input type="date" class="fi" value="'+sch.date+'" style="font-size:11px;margin:0;padding:3px 5px" '
             +'onchange="updateEmiEntry(\''+loan.id+'\',\''+dStr+'\',\'date\',this.value)">'
-          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(sch.interestPart||0)+'</div>'
-          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(sch.principalPart||0)+'</div>'
-          +'<input type="checkbox" '+(sch.paid?'checked':'')+' '
+          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(intPartDisplay)+'</div>'
+          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(prinPartDisplay)+'</div>'
+          +'<input type="checkbox" '+(isPaid?'checked':'')+' '
             +'onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '
             +'style="width:18px;height:18px;cursor:pointer;accent-color:var(--teal)">'
         +'</div>';
