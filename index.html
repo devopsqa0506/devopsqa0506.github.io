@@ -2564,30 +2564,23 @@ function setSyncStatus(s) {
   var sid = cfg.sheetId || '';
   if (!url) { console.warn('SiteBook: no scriptUrl'); return; }
   if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return; }
-  // Use GET to avoid 302 redirect that strips POST body
-  var getUrl = url
-    + '?action=append'
-    + '&sheetId=' + encodeURIComponent(sid)
-    + '&sheetName=' + encodeURIComponent(sheetName)
-    + '&headers=' + encodeURIComponent(JSON.stringify(headers))
-    + '&row=' + encodeURIComponent(JSON.stringify(row));
-  fetch(getUrl)
-    .then(function(){ setSyncStatus('ok'); state.lastSync = new Date().toISOString(); saveData();
-      document.getElementById('last-sync').textContent = 'Synced '+nowt();
-    })
-    .catch(function(e){ setSyncStatus('err'); console.error('SiteBook pushToSheet err:', e); });
+  // POST with action in URL param — survives 302 redirect, body delivered via no-cors
+  fetch(url + '?action=append', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({sheetId:sid, sheetName:sheetName, headers:headers, row:row})
+  });
 }
 
 // ── deleteFromSheet via GET (avoids 302 redirect on POST) ──
 function deleteFromSheet(sheetName, matchCol, matchVal) {
   if (!cfg.scriptUrl || !cfg.sheetId) return;
-  var url = cfg.scriptUrl
-    + '?action=deleteRow'
-    + '&sheetId=' + encodeURIComponent(cfg.sheetId)
-    + '&sheetName=' + encodeURIComponent(sheetName)
-    + '&matchCol=' + encodeURIComponent(matchCol)
-    + '&matchVal=' + encodeURIComponent(matchVal);
-  fetch(url).catch(function(e){ console.error('deleteFromSheet err:', e); });
+  // POST with action in URL param — survives 302 redirect, body delivered via no-cors
+  fetch(cfg.scriptUrl + '?action=deleteRow', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({sheetId:cfg.sheetId, sheetName:sheetName, matchCol:matchCol, matchVal:matchVal})
+  });
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
