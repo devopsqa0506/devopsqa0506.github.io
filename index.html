@@ -7838,25 +7838,29 @@ function deletePayment(pmtId) {
 // ── Delete Loan ──
 function deleteLoan(loanId) {
   if (!confirm('Delete this loan and all its payments?')) return;
-  
+
+  // Capture payments before removing from state
+  var pmtsToDelete = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
+
   // Delete from state
   state.loans = (state.loans||[]).filter(function(l){ return l.id!==loanId; });
   state.loanPayments = (state.loanPayments||[]).filter(function(p){ return p.loanId!==loanId; });
   saveData();
-  
-  // Delete from sheet
+
+  // Delete from sheet — each row individually (deleteRow only deletes first match)
   if (loanId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
       method:'POST', mode:'no-cors',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'Loans', matchCol:'id', matchVal:loanId})
     });
-    // Delete all payments for this loan
-    fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
-      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'loanId', matchVal:loanId})
+    pmtsToDelete.forEach(function(p) {
+      fetch(cfg.scriptUrl, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:p.id})
+      });
     });
   }
-  
+
   renderLoanList();
   toast('Loan deleted','ok');
 }
