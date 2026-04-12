@@ -765,6 +765,27 @@ input[type=number] { -moz-appearance:textfield; }
   </div>
 </div>
 
+<!-- SCRIPT URL PROMPT — shown after first login when no script URL is configured -->
+<div id="script-url-prompt" style="display:none;position:fixed;inset:0;z-index:7000;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="max-width:360px;width:100%;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">⚙️</div>
+    <div style="font-size:20px;font-weight:700;color:var(--tx1);margin-bottom:8px">One-time Setup</div>
+    <div style="font-size:14px;color:var(--tx2);margin-bottom:24px;line-height:1.6">
+      మీ SiteBook Apps Script URL enter చేయండి.<br>
+      ఇది మీ Google Drive నుండి config load చేస్తుంది.
+    </div>
+    <input id="script-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+      style="width:100%;padding:12px;border:2px solid var(--s4);border-radius:8px;background:var(--s2);color:var(--tx1);font-size:14px;margin-bottom:8px;box-sizing:border-box">
+    <div id="script-url-error" style="color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px"></div>
+    <button onclick="submitScriptUrl()" style="width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer">
+      Connect &amp; Continue →
+    </button>
+    <div style="margin-top:16px;font-size:12px;color:var(--tx3)">
+      Script URL మీ Apps Script deploy నుండి వస్తుంది
+    </div>
+  </div>
+</div>
+
 <!-- SPLASH -->
 <div id="splash">
   <div style="width:120px;height:120px;margin-bottom:4px">
@@ -2222,8 +2243,6 @@ var SHEET_ID   = '';
   // Purpose: Load config from Drive, apply user QR input, merge safely
   // ════════════════════════════════════════════════════════════════════════════════
   function mergeHardcodedConfig(c) {
-  // Don't set any hardcoded defaults - all config comes from Drive or QR
-  // setupDone = false unless explicitly set by Drive config or QR
   if (c.setupDone === undefined) c.setupDone = false;
   return c;
 }
@@ -7042,7 +7061,13 @@ var GOOGLE_CLIENT_ID = cfg.googleClientId || '849554560698-0a45clrf9sp5ufvsnvufg
 
 var currentUser = null;
 
+var _googleInitDone = false;
 function initGoogleLogin() {
+  if (_googleInitDone) {
+    if (typeof google !== 'undefined' && google.accounts) google.accounts.id.prompt();
+    return;
+  }
+  _googleInitDone = true;
   if (!GOOGLE_CLIENT_ID) return;
   // GSI library is async — wait for it to load
   if (typeof google === 'undefined' || typeof google.accounts === 'undefined') {
@@ -7107,7 +7132,10 @@ function signInWithGoogle() {
   }
 }
 
+var _loginHandled = false;
 function handleGoogleLogin(response) {
+  if (_loginHandled) return; // prevent duplicate calls
+  _loginHandled = true;
   try {
     // Decode JWT token
     var parts = response.credential.split('.');
@@ -7151,13 +7179,52 @@ function handleGoogleLogin(response) {
           showSetupScreen();
         });
     } else {
-      // No script URL at all — first time setup
-      showSetupScreen();
-      toast('Welcome! Setup complete చేయండి — Sheet ID + API Key enter చేయండి', 'info');
+      // No script URL at all — show one-field script URL prompt
+      showScriptUrlPrompt();
     }
   } catch(e) {
     toast('Login failed: ' + e.message, 'err');
   }
+}
+
+function showScriptUrlPrompt() {
+  var el = document.getElementById('script-url-prompt');
+  if (el) el.style.display = 'flex';
+}
+
+function hideScriptUrlPrompt() {
+  var el = document.getElementById('script-url-prompt');
+  if (el) el.style.display = 'none';
+}
+
+function submitScriptUrl() {
+  var inp = document.getElementById('script-url-input');
+  var err = document.getElementById('script-url-error');
+  var url = inp ? inp.value.trim() : '';
+  if (!url || !url.startsWith('https://script.google.com')) {
+    if (err) err.textContent = 'Valid script.google.com URL enter చేయండి';
+    return;
+  }
+  if (err) err.textContent = '';
+  if (inp) inp.disabled = true;
+  // Store temporarily and try to load config
+  STORE.set('temp_script_url', url);
+  cfg.scriptUrl = url;
+  toast('Config loading...', 'info');
+  loadConfigFromDrive(url)
+    .then(function(configData) {
+      applyConfigFromDrive(configData);
+      STORE.set('temp_script_url', configData.scriptUrl || url);
+      hideScriptUrlPrompt();
+      launchApp();
+      setTimeout(function(){ syncFromSheet(); }, 800);
+    })
+    .catch(function(err2) {
+      if (inp) inp.disabled = false;
+      var errEl = document.getElementById('script-url-error');
+      if (errEl) errEl.textContent = 'Config load failed: ' + (err2.message || err2);
+      toast('Config load failed — URL check చేయండి', 'err');
+    });
 }
 
 function updateUserUI() {
@@ -7237,7 +7304,9 @@ function signOut() {
 
   toast('Signed out successfully', 'ok');
 
-  // Re-init Google login for fresh sign in
+  // Reset login flags so re-login works
+  _loginHandled = false;
+  _googleInitDone = false;
   setTimeout(function(){
     initGoogleLogin();
   }, 500);
