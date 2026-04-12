@@ -2568,7 +2568,7 @@ function setSyncStatus(s) {
   var payload = JSON.stringify({action:'append',sheetId:sid,sheetName:sheetName,headers:headers,row:row});
   console.log('SiteBook pushToSheet:', sheetName, payload);
   fetch(url, {
-    method:'POST', mode:'no-cors',
+    method:'POST',
     body: payload
   }).then(function(){ setSyncStatus('ok'); state.lastSync = new Date().toISOString(); saveData();
     document.getElementById('last-sync').textContent = 'Synced '+nowt();
@@ -5035,25 +5035,21 @@ function deleteProjByIndex(el) {
   if (cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
       method:'POST',
-      mode:'no-cors',
     body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'Projects', matchCol:'id', matchVal:projId})
     }).catch(function(){});
     
     fetch(cfg.scriptUrl, {
       method:'POST',
-      mode:'no-cors',
     body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'projId', matchVal:projId})
     }).catch(function(){});
     
     fetch(cfg.scriptUrl, {
       method:'POST',
-      mode:'no-cors',
     body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'projId', matchVal:projId})
     }).catch(function(){});
     
     fetch(cfg.scriptUrl, {
       method:'POST',
-      mode:'no-cors',
     body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'projId', matchVal:projId})
     }).catch(function(){});
   }
@@ -5338,7 +5334,6 @@ function syncProjectPlots(projId) {
   // Delete old ProjectExpenses for this project — wait before appending
   fetch(cfg.scriptUrl, {
     method:'POST',
-    mode:'no-cors',
     body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'projId', matchVal:projId})
   }).catch(function(){}).then(function() {
     // Re-sync all plot expenses
@@ -5372,7 +5367,6 @@ function syncProjectPlots(projId) {
   // Update Projects sheet with full plot data
   fetch(cfg.scriptUrl, {
     method:'POST',
-    mode:'no-cors',
     body:JSON.stringify({
       action:'updateRow',
       sheetId:cfg.sheetId,
@@ -5387,7 +5381,6 @@ function syncProjectPlots(projId) {
   // Sync LandPayments — wait for delete before appending to avoid race condition
   fetch(cfg.scriptUrl, {
     method:'POST',
-    mode:'no-cors',
     body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'projId', matchVal:projId})
   }).catch(function(){}).then(function() {
     (state.landPayments||[]).filter(function(p){ return p.projId===projId; }).forEach(function(pmt) {
@@ -5407,7 +5400,6 @@ function syncProjectIncome(projId) {
   // Delete old income entries — wait before appending to avoid race condition
   fetch(cfg.scriptUrl, {
     method:'POST',
-    mode:'no-cors',
     body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'projId', matchVal:projId})
   }).catch(function(){}).then(function() {
     (proj.plots||[]).forEach(function(plt) {
@@ -6276,7 +6268,7 @@ function saveToDrive(b64, mimeType, fileName, docType, result, docRef) {
   }
 
   // Push to Apps Script → Drive
-  // Must use no-cors like pushToSheet — can't read response but file gets saved
+  
   var payload = JSON.stringify({
     action: 'saveFile',
     sheetId: cfg.sheetId,
@@ -6289,7 +6281,7 @@ function saveToDrive(b64, mimeType, fileName, docType, result, docRef) {
     description: desc
   });
 
-  // Always use no-cors — Apps Script blocks CORS from browser
+  
   console.log('Sending to Drive, payload size:', Math.round(payload.length/1024), 'KB');
   fetch(cfg.scriptUrl, { method: 'POST', mode: 'no-cors', body: payload })
   .then(function(){
@@ -7530,7 +7522,7 @@ function toggleEmiPaid(loanId, origDate) {
     // Delete from Google Sheet
     if (pmtIdToRemove && cfg.scriptUrl && cfg.sheetId) {
       fetch(cfg.scriptUrl, {
-        method:'POST', mode:'no-cors',
+        method:'POST',
         body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:pmtIdToRemove})
       });
     }
@@ -7546,7 +7538,7 @@ function deleteEmiPayment(loanId, origDate) {
   state.loanPayments = state.loanPayments.filter(function(p){ return p.id!==pmtId; });
   if (pmtId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:pmtId})
     });
   }
@@ -7826,7 +7818,7 @@ function deletePayment(pmtId) {
   // Delete from sheet
   if (pmtId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:pmtId})
     });
   }
@@ -7850,12 +7842,12 @@ function deleteLoan(loanId) {
   // Delete from sheet — each row individually (deleteRow only deletes first match)
   if (loanId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'Loans', matchCol:'id', matchVal:loanId})
     });
     pmtsToDelete.forEach(function(p) {
       fetch(cfg.scriptUrl, {
-        method:'POST', mode:'no-cors',
+        method:'POST',
         body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:p.id})
       });
     });
@@ -8200,7 +8192,7 @@ function deleteLandPayment(pmtId) {
   // Delete from sheet
   if (pmtId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'id', matchVal:pmtId})
     });
   }
@@ -8391,7 +8383,7 @@ function deleteProjIncome(incId) {
   // Delete from sheet
   if (incId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'id', matchVal:incId})
     });
   }
@@ -8614,7 +8606,7 @@ function deleteProjExpense(expId) {
   // Delete from sheet
   if (expId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
-      method:'POST', mode:'no-cors',
+      method:'POST',
       body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'id', matchVal:expId})
     });
   }
