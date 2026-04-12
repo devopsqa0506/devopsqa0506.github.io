@@ -2714,14 +2714,13 @@ function mergeSheetData(sheetData) {
   refreshUI();
 
   // ── Loans — full replace, sheet is source of truth ──
-  // ── Loans — always replace from sheet (empty sheet = clear state) ──
   var lnData = sheetData.Loans || [];
   var lnHdrs = lnData[0] || []; var lnRows = lnData.slice(1);
   state.loans = lnRows.map(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
     o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; return o;
   }).filter(function(o){ return o.id; });
 
-  // ── LoanPayments — always replace from sheet ──
+  // ── LoanPayments — full replace, sheet is source of truth ──
   var lpData = sheetData.LoanPayments || [];
   var lpHdrs = lpData[0] || []; var lpRows = lpData.slice(1);
   state.loanPayments = lpRows.map(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
@@ -2731,21 +2730,21 @@ function mergeSheetData(sheetData) {
     return o;
   }).filter(function(o){ return o.id; });
 
-  // ── ProjectIncome — always replace from sheet ──
+  // ── ProjectIncome — full replace, sheet is source of truth ──
   var piData = sheetData.ProjectIncome || [];
   var piHdrs = piData[0] || []; var piRows = piData.slice(1);
   state.projIncome = piRows.map(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
     o.amount=Math.round(Number(o.amount)||0); return o;
   }).filter(function(o){ return o.id; });
 
-  // ── LandPayments — always replace from sheet ──
+  // ── LandPayments — full replace, sheet is source of truth ──
   var lpData2 = sheetData.LandPayments || [];
   var lpHdrs2 = lpData2[0] || []; var lpRows2 = lpData2.slice(1);
   state.landPayments = lpRows2.map(function(r){ var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
     o.amount=Math.round(Number(o.amount)||0); return o;
   }).filter(function(o){ return o.id; });
 
-  // ── ProjectExpenses — always replace from sheet ──
+  // ── ProjectExpenses — full replace, sheet is source of truth ──
   var peData = sheetData.ProjectExpenses || [];
   var peHdrs = peData[0] || []; var peRows = peData.slice(1);
   state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
@@ -6255,7 +6254,7 @@ function saveToDrive(b64, mimeType, fileName, docType, result, docRef) {
   }
 
   // Push to Apps Script → Drive
-  
+  // Must use no-cors like pushToSheet — can't read response but file gets saved
   var payload = JSON.stringify({
     action: 'saveFile',
     sheetId: cfg.sheetId,
@@ -6268,7 +6267,7 @@ function saveToDrive(b64, mimeType, fileName, docType, result, docRef) {
     description: desc
   });
 
-  
+  // Always use no-cors — Apps Script blocks CORS from browser
   console.log('Sending to Drive, payload size:', Math.round(payload.length/1024), 'KB');
   fetch(cfg.scriptUrl, { method: 'POST', mode: 'no-cors', body: payload })
   .then(function(){
@@ -7462,23 +7461,17 @@ function updateEmiEntry(loanId, origDate, field, value) {
 
 // ── Toggle EMI Paid ──
 function toggleEmiPaid(loanId, origDate) {
-  if (!state.emiSchedule) state.emiSchedule = [];
   var loan = (state.loans||[]).find(function(l){return l.id===loanId;});
   if (!loan) return;
-  var entry = state.emiSchedule.find(function(s){return s.loanId===loanId && s.origDate===origDate;});
-  if (!entry) {
-    entry = { id:'sch_'+Date.now(), loanId:loanId, origDate:origDate, date:origDate, amount:loan.emi||0, paid:false, interestPart:0, principalPart:0 };
-    state.emiSchedule.push(entry);
-  }
-  // Check loanPayments as source of truth
-  if (!state.loanPayments) state.loanPayments = [];
-  var existingEmiPmt = state.loanPayments.find(function(p){ return p.loanId===loanId && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===origDate; });
+  // Use loanPayments as source of truth — not emiSchedule
+  var existingEmiPmt = (state.loanPayments||[]).find(function(p){
+    return p.loanId===loanId && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===origDate;
+  });
   var isCurrentlyPaid = !!existingEmiPmt;
 
   if (!isCurrentlyPaid) {
-    // Mark as paid — calculate interest/principal split
-    entry.paid = true;
-    var existingPmts = state.loanPayments.filter(function(p){ return p.loanId===loanId; });
+    // Mark as paid — calculate interest/principal and save
+    var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
     var paidPrin = existingPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
     var outstandingBal = Math.max(Number(loan.principal||0) - paidPrin, 0);
     var mRate = loan.rateType==='pm' ? Number(loan.rate||0)/100
@@ -7487,26 +7480,20 @@ function toggleEmiPaid(loanId, origDate) {
     var intPart = (loan.rateType==='0' || !loan.rate) ? 0
                 : loan.rateType==='flat' ? Number(loan.rate||0)
                 : Math.round(outstandingBal * mRate);
-    intPart = Math.min(intPart, entry.amount);
-    var prinPart = Math.max(entry.amount - intPart, 0);
-    entry.interestPart = intPart;
-    entry.principalPart = prinPart;
-    // Create payment with NEW schema: principalAmount, interestAmount
-    var pmt = { id:'pmt_emi_'+Date.now(), loanId:loanId, date:entry.date, type:'emi',
+    intPart = Math.min(intPart, Number(loan.emi||0));
+    var prinPart = Math.max(Number(loan.emi||0) - intPart, 0);
+    var pmt = { id:'pmt_emi_'+Date.now(), loanId:loanId, date:origDate, type:'emi',
                 principalAmount:prinPart, interestAmount:intPart, notes:'EMI', isEmi:true, emiOrigDate:origDate };
+    if (!state.loanPayments) state.loanPayments=[];
     state.loanPayments.push(pmt);
-    entry.pmtId = pmt.id;
     pushToSheet('LoanPayments',
       ['id','loanId','date','type','principalAmount','interestAmount','notes','isEmi','emiOrigDate'],
       [pmt.id, pmt.loanId, pmt.date, 'emi', prinPart, intPart, 'EMI', 'true', origDate]
     );
   } else {
-    // Mark as unpaid — remove existing EMI payment from state AND sheet
-    entry.paid = false;
+    // Mark as unpaid — remove from state and delete from sheet
     var pmtIdToRemove = existingEmiPmt.id;
     state.loanPayments = state.loanPayments.filter(function(p){return p.id!==pmtIdToRemove;});
-    entry.pmtId = null;
-    // Delete from Google Sheet
     if (pmtIdToRemove && cfg.scriptUrl && cfg.sheetId) {
       fetch(cfg.scriptUrl, {
         method:'POST',
@@ -7817,16 +7804,15 @@ function deletePayment(pmtId) {
 // ── Delete Loan ──
 function deleteLoan(loanId) {
   if (!confirm('Delete this loan and all its payments?')) return;
-
+  
   // Capture payments before removing from state
   var pmtsToDelete = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
-
   // Delete from state
   state.loans = (state.loans||[]).filter(function(l){ return l.id!==loanId; });
   state.loanPayments = (state.loanPayments||[]).filter(function(p){ return p.loanId!==loanId; });
   saveData();
-
-  // Delete from sheet — each row individually (deleteRow only deletes first match)
+  
+  // Delete from sheet — each row individually
   if (loanId && cfg.scriptUrl && cfg.sheetId) {
     fetch(cfg.scriptUrl, {
       method:'POST',
@@ -7839,7 +7825,7 @@ function deleteLoan(loanId) {
       });
     });
   }
-
+  
   renderLoanList();
   toast('Loan deleted','ok');
 }
@@ -7989,34 +7975,31 @@ function renderLoanList() {
       while (d <= toD) {
         var dStr = d.toISOString().slice(0,10);
         var sch = schedForLoan.find(function(s){return s.origDate===dStr;}) || {origDate:dStr, date:dStr, amount:loan.emi, paid:false, interestPart:0, principalPart:0};
-        // Use loanPayments as source of truth for paid status
         var existingEmiPmt = (state.loanPayments||[]).find(function(p){ return p.loanId===loan.id && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===dStr; });
         var isPaid = !!existingEmiPmt;
-        var intPartDisplay = existingEmiPmt ? Number(existingEmiPmt.interestAmount||0) : (sch.interestPart||0);
-        var prinPartDisplay = existingEmiPmt ? Number(existingEmiPmt.principalAmount||0) : (sch.principalPart||0);
-        // Calculate interest/principal for display if not stored
-        if (!intPartDisplay && !prinPartDisplay && sch.amount) {
-          var existingNonEmiPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loan.id && !p.isEmi; });
-          var paidPrinNE = existingNonEmiPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
-          var outstandingBal = Math.max(Number(loan.principal||0) - paidPrinNE, 0);
+        // Calculate interest/principal if not stored
+        if (!sch.interestPart && !sch.principalPart && sch.amount) {
+          var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loan.id && !p.isEmi; });
+          var paidPrin = existingPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
+          var outstandingBal = Math.max(Number(loan.principal||0) - paidPrin, 0);
           var mRate = loan.rateType==='pm' ? Number(loan.rate||0)/100
                     : loan.rateType==='pa' ? Number(loan.rate||0)/100/12
                     : 0;
-          intPartDisplay = (loan.rateType==='0' || !loan.rate) ? 0
-                         : loan.rateType==='flat' ? Number(loan.rate||0)
-                         : Math.round(outstandingBal * mRate);
-          intPartDisplay = Math.min(intPartDisplay, sch.amount);
-          prinPartDisplay = Math.max(sch.amount - intPartDisplay, 0);
+          sch.interestPart = (loan.rateType==='0' || !loan.rate) ? 0
+                           : loan.rateType==='flat' ? Number(loan.rate||0)
+                           : Math.round(outstandingBal * mRate);
+          sch.interestPart = Math.min(sch.interestPart, sch.amount);
+          sch.principalPart = Math.max(sch.amount - sch.interestPart, 0);
         }
         html += '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr;gap:3px;align-items:center;margin-bottom:3px">'
           +'<input type="date" class="fi" value="'+sch.date+'" style="font-size:11px;margin:0;padding:3px 5px" '
             +'onchange="updateEmiEntry(\''+loan.id+'\',\''+dStr+'\',\'date\',this.value)">'
-          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(intPartDisplay)+'</div>'
-          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(prinPartDisplay)+'</div>'
+          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(existingEmiPmt?Number(existingEmiPmt.interestAmount||0):(sch.interestPart||0))+'</div>'
+          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(existingEmiPmt?Number(existingEmiPmt.principalAmount||0):(sch.principalPart||0))+'</div>'
           +'<input type="checkbox" '+(isPaid?'checked disabled':'')+' '
-            +'onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '
+            +(isPaid?'':('onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '))
             +'style="width:18px;height:18px;'+(isPaid?'cursor:not-allowed;opacity:0.5':'cursor:pointer')+';accent-color:var(--teal)">'
-          +(isPaid ? '<button onclick="deleteEmiPayment(\''+loan.id+'\',\''+dStr+'\')" style="background:none;border:none;color:var(--rose);font-size:13px;cursor:pointer;padding:0;line-height:1" title="Remove payment">✕</button>' : '<span></span>')
+          +(isPaid?('<button onclick="deleteEmiPayment(\''+loan.id+'\',\''+dStr+'\')" style="background:none;border:none;color:var(--rose);font-size:13px;cursor:pointer;padding:0 4px;line-height:1" title="Remove payment">✕</button>'):'<span></span>')
         +'</div>';
         d.setMonth(d.getMonth()+1);
       }
@@ -8412,11 +8395,11 @@ function renderPL() {
   }
 
   // Company-wide finance figures
-  var totalInterestPaid = (state.loanPayments||[]).reduce(function(s,p){ return s+Number(p.interestAmount||p.interestPart||0); },0);
+  var totalInterestPaid = (state.loanPayments||[]).reduce(function(s,p){ return s+Number(p.interestPart||0); },0);
   var totalBorrowed     = loans.reduce(function(s,l){ return s+Number(l.principal||0); },0);
   var totalOutstanding  = loans.reduce(function(s,l){
     var pmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===l.id; });
-    var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalAmount||p.principalPart||0); },0);
+    var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalPart||0); },0);
     return s + Math.max(Number(l.principal||0) - paid, 0);
   }, 0);
 
@@ -8431,7 +8414,8 @@ function renderPL() {
     var landPaid = (state.landPayments||[]).filter(function(p){ return p.projId===proj.id; })
                    .reduce(function(s,p){ return s+Number(p.amount||0); },0);
     var landCostTotal = Number(proj.landCost||0) || (totalCents * Number(proj.pricePerCent||0));
-    var centRate = totalCents > 0 ? landCostTotal / totalCents : 0;
+    var landForCalc = landPaid > 0 ? landPaid : landCostTotal;
+    var centRate = totalCents > 0 ? landForCalc / totalCents : 0;
 
     // Migrate old plots
     plots.forEach(function(plt) {
@@ -8474,7 +8458,7 @@ function renderPL() {
     var manualExp = (state.projExpenses||[]).filter(function(e){ return e.projId===proj.id; })
                     .reduce(function(s,e){ return s+Number(e.amount||0); },0);
 
-    var costIncurred = landCostTotal + projConstCost + projMiscOther + manualExp;
+    var costIncurred = landForCalc + projConstCost + projMiscOther + manualExp;
     var grossProfit  = soldRevenue - soldCOGS - manualExp;
     var gpColor      = grossProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
     var outstanding  = Math.max(landCostTotal - landPaid, 0);
@@ -8490,10 +8474,10 @@ function renderPL() {
       ? '<span style="margin-left:auto;font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(122,200,90,0.1);color:var(--sage);font-family:JetBrains Mono">Margin '+roi+'</span>'
       : '<span style="margin-left:auto;font-size:11px;padding:3px 9px;border-radius:6px;background:var(--s3);color:var(--tx3)">🏗️ In Progress</span>';
 
-    var landLine = landCostTotal > 0
+    var landLine = landForCalc > 0
       ? (landPaid > 0 && landPaid < landCostTotal
-        ? '<div class="pl-row"><span class="pl-lbl">🌾 Land Cost <span style="font-size:10px;color:var(--tx3)">('+rup(landPaid)+' paid of '+rup(landCostTotal)+')</span></span><span class="pl-val" style="color:var(--amb)">'+rup(landCostTotal)+' <span style="font-size:10px;color:var(--sky)">('+shortAmt(landCostTotal)+')</span></span></div>'
-        : '<div class="pl-row"><span class="pl-lbl">🌾 Land Cost</span><span class="pl-val" style="color:var(--amb)">'+rup(landCostTotal)+' <span style="font-size:10px;color:var(--teal)">('+shortAmt(landCostTotal)+')</span></span></div>')
+        ? '<div class="pl-row"><span class="pl-lbl">🌾 Land Paid <span style="font-size:10px;color:var(--tx3)">('+rup(landPaid)+' of '+rup(landCostTotal)+')</span></span><span class="pl-val" style="color:var(--amb)">'+rup(landPaid)+' <span style="font-size:10px;color:var(--sky)">('+shortAmt(landPaid)+')</span></span></div>'
+        : '<div class="pl-row"><span class="pl-lbl">🌾 Land Cost</span><span class="pl-val" style="color:var(--amb)">'+rup(landForCalc)+' <span style="font-size:10px;color:var(--teal)">('+shortAmt(landForCalc)+')</span></span></div>')
       : '';
 
     html += '<div class="pl-card fu">'
