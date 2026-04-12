@@ -2713,56 +2713,43 @@ function mergeSheetData(sheetData) {
   renderDocList();
   refreshUI();
 
-  // ── Merge Loans ──
-  if (sheetData.Loans && sheetData.Loans.length > 1) {
-    var lnHdrs = sheetData.Loans[0]; var lnRows = sheetData.Loans.slice(1);
-    if (!state.loans) state.loans=[];
-    var lnIds = new Set(state.loans.map(function(l){ return l.id; }));
-    lnRows.forEach(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      if (o.id && !lnIds.has(o.id)) { o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; state.loans.push(o); }
-    });
+  // ── Loans — full replace, sheet is source of truth ──
+  if (sheetData.Loans) {
+    var lnHdrs = (sheetData.Loans[0]||[]); var lnRows = sheetData.Loans.slice(1);
+    state.loans = lnRows.map(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; return o;
+    }).filter(function(o){ return o.id; });
   }
-  // ── Merge LoanPayments ──
-  if (sheetData.LoanPayments && sheetData.LoanPayments.length > 1) {
-    var lpHdrs = sheetData.LoanPayments[0]; var lpRows = sheetData.LoanPayments.slice(1);
-    if (!state.loanPayments) state.loanPayments=[];
-    var lpIds = new Set(state.loanPayments.map(function(p){ return p.id; }));
-    lpRows.forEach(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      if (o.id && !lpIds.has(o.id)) { 
-        o.amount=Math.round(Number(o.amount)||0); 
-        // Support both old and new schema
-        o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0); 
-        o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0); 
-        state.loanPayments.push(o); 
-      }
-    });
+  // ── LoanPayments — full replace, sheet is source of truth ──
+  if (sheetData.LoanPayments) {
+    var lpHdrs = (sheetData.LoanPayments[0]||[]); var lpRows = sheetData.LoanPayments.slice(1);
+    state.loanPayments = lpRows.map(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      o.amount=Math.round(Number(o.amount)||0);
+      o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0);
+      o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0);
+      return o;
+    }).filter(function(o){ return o.id; });
   }
-  // ── Merge ProjectIncome ──
-  if (sheetData.ProjectIncome && sheetData.ProjectIncome.length > 1) {
-    var piHdrs = sheetData.ProjectIncome[0]; var piRows = sheetData.ProjectIncome.slice(1);
-    if (!state.projIncome) state.projIncome=[];
-    var piIds = new Set(state.projIncome.map(function(i){ return i.id; }));
-    piRows.forEach(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      if (o.id && !piIds.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.projIncome.push(o); }
-    });
+  // ── ProjectIncome — full replace, sheet is source of truth ──
+  if (sheetData.ProjectIncome) {
+    var piHdrs = (sheetData.ProjectIncome[0]||[]); var piRows = sheetData.ProjectIncome.slice(1);
+    state.projIncome = piRows.map(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      o.amount=Math.round(Number(o.amount)||0); return o;
+    }).filter(function(o){ return o.id; });
   }
-  // ── Merge ProjectExpenses ──
-  if (sheetData.LandPayments && sheetData.LandPayments.length > 1) {
-    var lpHdrs2 = sheetData.LandPayments[0]; var lpRows2 = sheetData.LandPayments.slice(1);
-    if (!state.landPayments) state.landPayments=[];
-    var lpIds2 = new Set(state.landPayments.map(function(p){ return p.id; }));
-    lpRows2.forEach(function(r){
-      var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
-      if (o.id && !lpIds2.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.landPayments.push(o); }
-    });
+  // ── LandPayments — full replace, sheet is source of truth ──
+  if (sheetData.LandPayments) {
+    var lpHdrs2 = (sheetData.LandPayments[0]||[]); var lpRows2 = sheetData.LandPayments.slice(1);
+    state.landPayments = lpRows2.map(function(r){ var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
+      o.amount=Math.round(Number(o.amount)||0); return o;
+    }).filter(function(o){ return o.id; });
   }
-  if (sheetData.ProjectExpenses && sheetData.ProjectExpenses.length > 1) {
-    var peHdrs = sheetData.ProjectExpenses[0]; var peRows = sheetData.ProjectExpenses.slice(1);
-    if (!state.projExpenses) state.projExpenses=[];
-    var peIds = new Set(state.projExpenses.map(function(e){ return e.id; }));
-    peRows.forEach(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      if (o.id && !peIds.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.projExpenses.push(o); }
-    });
+  // ── ProjectExpenses — full replace, sheet is source of truth ──
+  if (sheetData.ProjectExpenses) {
+    var peHdrs = (sheetData.ProjectExpenses[0]||[]); var peRows = sheetData.ProjectExpenses.slice(1);
+    state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      o.amount=Math.round(Number(o.amount)||0); return o;
+    }).filter(function(o){ return o.id; });
   }
   
   // Render finance screens after sync
