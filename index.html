@@ -2078,6 +2078,12 @@ var APPS_SCRIPT_CODE = [
   'function doGet(e) {',
   '  try {',
   '    var params = e.parameter;',
+  '    if (params.action === "getConfig") {',
+  '      var files = DriveApp.getFilesByName("SiteBook_Config.json");',
+  '      if (!files.hasNext()) return ok({error: "SiteBook_Config.json not found in Drive"});',
+  '      var config = JSON.parse(files.next().getBlob().getDataAsString());',
+  '      return ok({data: config});',
+  '    }',
   '    if (params.action === "getDriveUrl" && params.sheetId) {',
   '      var root = getOrCreateFolder("SiteBook Docs", DriveApp.getRootFolder());',
   '      return ok({url: "https://drive.google.com/drive/folders/" + root.getId()});',
@@ -2136,14 +2142,10 @@ function loadConfigFromDrive(scriptUrl) {
     return Promise.resolve(cached.data);
   }
   
-  // Fetch fresh config from Apps Script
+  // Fetch fresh config from Apps Script via GET (works cross-origin)
   console.log('SiteBook: Fetching config from Drive via Apps Script...');
-  return fetch(scriptUrl, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'getConfig'
-    })
-  })
+  var url = scriptUrl + '?action=getConfig&t=' + Date.now();
+  return fetch(url, { method: 'GET' })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok && data.data) {
