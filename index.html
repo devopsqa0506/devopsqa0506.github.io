@@ -2106,7 +2106,8 @@ var STORE = (function() {
   try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); hasLS = true; } catch(e){}
   return {
     get: function(k) { try { if(hasLS) { var v=localStorage.getItem(k); return v?JSON.parse(v):null; } } catch(e){} return mem[k]||null; },
-    set: function(k,v) { try { if(hasLS) localStorage.setItem(k,JSON.stringify(v)); } catch(e){} mem[k]=v; }
+    set: function(k,v) { try { if(hasLS) localStorage.setItem(k,JSON.stringify(v)); } catch(e){} mem[k]=v; },
+    remove: function(k) { try { if(hasLS) localStorage.removeItem(k); } catch(e){} delete mem[k]; }
   };
 })();
 
@@ -2146,7 +2147,7 @@ function loadConfigFromDrive(scriptUrl) {
   // action passed as URL param (e.parameter.action in Apps Script)
   console.log('SiteBook: Fetching config from Drive via Apps Script...');
   var url = scriptUrl + '?action=getConfig';
-  return fetch(url, { method: 'POST', body: '{}' })
+  return fetch(url)
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok && data.data) {
@@ -2584,19 +2585,27 @@ function setSyncStatus(s) {
   if (!cfg.scriptUrl || !cfg.sheetId || isSyncing) return;
   isSyncing = true;
   setSyncStatus('syncing');
-  fetch(cfg.scriptUrl, {
-    method:'POST',
-    body: JSON.stringify({action:'readAll',sheetId:cfg.sheetId,sheets:["Entries","Vendors","Prices","Documents","Contacts","Projects","BillHeaders","BillItems","Loans","LoanPayments","ProjectIncome","ProjectExpenses","LandPayments"]})
-  }).then(function(r){ return r.json(); }).then(function(data){
+  // Use GET to avoid CORS preflight issues with Apps Script
+  var sheets = ["Entries","Vendors","Prices","Documents","Contacts","Projects","BillHeaders","BillItems","Loans","LoanPayments","ProjectIncome","ProjectExpenses","LandPayments","PlotLandPayments"];
+  var getUrl = cfg.scriptUrl + '?action=readAll&sheetId=' + encodeURIComponent(cfg.sheetId) + '&sheets=' + encodeURIComponent(JSON.stringify(sheets));
+  fetch(getUrl)
+  .then(function(r){ return r.json(); })
+  .then(function(data){
     if (data.ok && data.data) {
       mergeSheetData(data.data);
+    } else {
+      console.warn('SiteBook syncFromSheet: response not ok —', data.error);
     }
     setSyncStatus('ok');
     state.lastSync = new Date().toISOString();
     saveData(); refreshUI();
     document.getElementById('last-sync').textContent = 'Synced '+nowt();
     document.getElementById('cfg-sync').textContent = 'Last sync: '+new Date(state.lastSync).toLocaleString('en-IN');
-  }).catch(function(){ setSyncStatus('off'); }).finally(function(){ isSyncing = false; });
+  }).catch(function(err){ 
+    setSyncStatus('off'); 
+    console.error('SiteBook syncFromSheet failed:', err);
+    toast('Sync failed — check network / Apps Script URL', 'err');
+  }).finally(function(){ isSyncing = false; });
 }
 
 function mergeSheetData(sheetData) {
@@ -7158,29 +7167,33 @@ function handleGoogleLogin(response) {
     updateUserUI();
     toast('Welcome ' + payload.name.split(' ')[0] + '! 👋', 'ok');
 
-    // Already fully configured — just launch
-    if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
-      launchApp();
-      setTimeout(function(){ if (!isSyncing) syncFromSheet(); }, 800);
-      return;
-    }
-
-    // Try loading config from Drive using cached or stored script URL
+    // Always try to refresh config from Drive first
     var tempScriptUrl = cfg.scriptUrl || STORE.get('temp_script_url');
     if (tempScriptUrl) {
+      // Force-clear cache so we always get fresh config after login
+      STORE.remove(CONFIG_CACHE_KEY);
       toast('Loading config from Drive...', 'info');
       loadConfigFromDrive(tempScriptUrl)
         .then(function(configData) {
           applyConfigFromDrive(configData);
           STORE.set('temp_script_url', configData.scriptUrl || tempScriptUrl);
+          console.log('SiteBook: Config refreshed after login — scriptUrl:', cfg.scriptUrl, 'sheetId:', cfg.sheetId);
           launchApp();
-          setTimeout(function(){ syncFromSheet(); }, 800);
         })
         .catch(function(err) {
           console.error('SiteBook: Drive config load failed after login:', err.message);
-          toast('Config load failed — please use manual setup', 'err');
-          showSetupScreen();
+          // If we have a full working config already, launch anyway
+          if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
+            console.warn('SiteBook: Using cached cfg as fallback');
+            launchApp();
+          } else {
+            toast('Config load failed — please re-enter script URL', 'err');
+            showSetupScreen();
+          }
         });
+    } else if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
+      // No script URL stored but cfg has everything — launch directly
+      launchApp();
     } else {
       // No script URL at all — show one-field script URL prompt
       showScriptUrlPrompt();
