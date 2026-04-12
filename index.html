@@ -7159,7 +7159,7 @@ function handleGoogleLogin(response) {
     toast('Welcome ' + payload.name.split(' ')[0] + '! 👋', 'ok');
 
     // Already fully configured — just launch
-    if (cfg.setupDone && cfg.sheetId && cfg.geminiKey && cfg.scriptUrl) {
+    if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
       launchApp();
       setTimeout(function(){ if (!isSyncing) syncFromSheet(); }, 800);
       return;
@@ -7333,7 +7333,7 @@ function init() {
       splash.style.display = 'none';
       
       // Check if already has complete config from previous session (localStorage)
-      if (cfg.setupDone && cfg.sheetId && cfg.geminiKey && cfg.scriptUrl) {
+      if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
         console.log('SiteBook: Using config from localStorage');
         launchApp();
         updateUserUI();
