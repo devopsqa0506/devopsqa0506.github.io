@@ -2734,6 +2734,9 @@ function mergeSheetData(sheetData) {
     o.amount=Math.round(Number(o.amount)||0);
     o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0);
     o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0);
+    // Force string types — Sheets may return Date objects or booleans
+    if (o.emiOrigDate) o.emiOrigDate = String(o.emiOrigDate).slice(0,10);
+    if (o.isEmi !== undefined) o.isEmi = (o.isEmi===true||o.isEmi==='true'||o.isEmi==='TRUE');
     return o;
   }).filter(function(o){ return o.id; });
 
@@ -7495,7 +7498,13 @@ function toggleEmiPaid(loanId, origDate) {
     }
   }
   saveData();
+  var lbody = document.getElementById('lbody_' + loanId);
+  var wasOpen = lbody && lbody.style.display !== 'none';
   renderLoanList();
+  if (wasOpen) {
+    var newBody = document.getElementById('lbody_' + loanId);
+    if (newBody) newBody.style.display = 'block';
+  }
 }
 
 function deleteEmiPayment(loanId, origDate) {
@@ -7507,7 +7516,13 @@ function deleteEmiPayment(loanId, origDate) {
     deleteFromSheet('LoanPayments', 'id', pmtId);
   }
   saveData();
+  var lbody2 = document.getElementById('lbody_' + loanId);
+  var wasOpen2 = lbody2 && lbody2.style.display !== 'none';
   renderLoanList();
+  if (wasOpen2) {
+    var newBody2 = document.getElementById('lbody_' + loanId);
+    if (newBody2) newBody2.style.display = 'block';
+  }
 }
 
 // ── Tab switcher ──
