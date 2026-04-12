@@ -2142,10 +2142,11 @@ function loadConfigFromDrive(scriptUrl) {
     return Promise.resolve(cached.data);
   }
   
-  // Fetch fresh config from Apps Script via GET (works cross-origin)
+  // Fetch fresh config from Apps Script
+  // action passed as URL param (e.parameter.action in Apps Script)
   console.log('SiteBook: Fetching config from Drive via Apps Script...');
-  var url = scriptUrl + '?action=getConfig&t=' + Date.now();
-  return fetch(url, { method: 'GET' })
+  var url = scriptUrl + '?action=getConfig';
+  return fetch(url, { method: 'POST', body: '{}' })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok && data.data) {
