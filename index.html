@@ -2714,43 +2714,43 @@ function mergeSheetData(sheetData) {
   refreshUI();
 
   // ── Loans — full replace, sheet is source of truth ──
-  if (sheetData.Loans) {
-    var lnHdrs = (sheetData.Loans[0]||[]); var lnRows = sheetData.Loans.slice(1);
-    state.loans = lnRows.map(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; return o;
-    }).filter(function(o){ return o.id; });
-  }
-  // ── LoanPayments — full replace, sheet is source of truth ──
-  if (sheetData.LoanPayments) {
-    var lpHdrs = (sheetData.LoanPayments[0]||[]); var lpRows = sheetData.LoanPayments.slice(1);
-    state.loanPayments = lpRows.map(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      o.amount=Math.round(Number(o.amount)||0);
-      o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0);
-      o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0);
-      return o;
-    }).filter(function(o){ return o.id; });
-  }
-  // ── ProjectIncome — full replace, sheet is source of truth ──
-  if (sheetData.ProjectIncome) {
-    var piHdrs = (sheetData.ProjectIncome[0]||[]); var piRows = sheetData.ProjectIncome.slice(1);
-    state.projIncome = piRows.map(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      o.amount=Math.round(Number(o.amount)||0); return o;
-    }).filter(function(o){ return o.id; });
-  }
-  // ── LandPayments — full replace, sheet is source of truth ──
-  if (sheetData.LandPayments) {
-    var lpHdrs2 = (sheetData.LandPayments[0]||[]); var lpRows2 = sheetData.LandPayments.slice(1);
-    state.landPayments = lpRows2.map(function(r){ var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
-      o.amount=Math.round(Number(o.amount)||0); return o;
-    }).filter(function(o){ return o.id; });
-  }
-  // ── ProjectExpenses — full replace, sheet is source of truth ──
-  if (sheetData.ProjectExpenses) {
-    var peHdrs = (sheetData.ProjectExpenses[0]||[]); var peRows = sheetData.ProjectExpenses.slice(1);
-    state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
-      o.amount=Math.round(Number(o.amount)||0); return o;
-    }).filter(function(o){ return o.id; });
-  }
+  // ── Loans — always replace from sheet (empty sheet = clear state) ──
+  var lnData = sheetData.Loans || [];
+  var lnHdrs = lnData[0] || []; var lnRows = lnData.slice(1);
+  state.loans = lnRows.map(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
+    o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; return o;
+  }).filter(function(o){ return o.id; });
+
+  // ── LoanPayments — always replace from sheet ──
+  var lpData = sheetData.LoanPayments || [];
+  var lpHdrs = lpData[0] || []; var lpRows = lpData.slice(1);
+  state.loanPayments = lpRows.map(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
+    o.amount=Math.round(Number(o.amount)||0);
+    o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0);
+    o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0);
+    return o;
+  }).filter(function(o){ return o.id; });
+
+  // ── ProjectIncome — always replace from sheet ──
+  var piData = sheetData.ProjectIncome || [];
+  var piHdrs = piData[0] || []; var piRows = piData.slice(1);
+  state.projIncome = piRows.map(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
+    o.amount=Math.round(Number(o.amount)||0); return o;
+  }).filter(function(o){ return o.id; });
+
+  // ── LandPayments — always replace from sheet ──
+  var lpData2 = sheetData.LandPayments || [];
+  var lpHdrs2 = lpData2[0] || []; var lpRows2 = lpData2.slice(1);
+  state.landPayments = lpRows2.map(function(r){ var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
+    o.amount=Math.round(Number(o.amount)||0); return o;
+  }).filter(function(o){ return o.id; });
+
+  // ── ProjectExpenses — always replace from sheet ──
+  var peData = sheetData.ProjectExpenses || [];
+  var peHdrs = peData[0] || []; var peRows = peData.slice(1);
+  state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
+    o.amount=Math.round(Number(o.amount)||0); return o;
+  }).filter(function(o){ return o.id; });
   
   // Render finance screens after sync
   renderLoanList();
