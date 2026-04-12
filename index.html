@@ -7814,12 +7814,16 @@ function deleteLoan(loanId) {
   state.loanPayments = (state.loanPayments||[]).filter(function(p){ return p.loanId!==loanId; });
   saveData();
   
-  // Delete from sheet — each row individually
+  // Delete from sheet — individual by id, then sweep by loanId to catch any stragglers
   if (loanId && cfg.scriptUrl && cfg.sheetId) {
     deleteFromSheet('Loans', 'id', loanId);
     pmtsToDelete.forEach(function(p) {
       deleteFromSheet('LoanPayments', 'id', p.id);
     });
+    // Straggler sweep — catches any payments missed due to async timing
+    setTimeout(function() {
+      deleteFromSheet('LoanPayments', 'loanId', loanId);
+    }, 2000);
   }
   
   renderLoanList();
