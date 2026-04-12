@@ -7522,13 +7522,18 @@ function toggleEmiPaid(loanId, origDate) {
       [pmt.id, pmt.loanId, pmt.date, 'emi', prinPart, intPart, 'EMI']
     );
   } else {
-    // Mark as unpaid — remove existing EMI payment
+    // Mark as unpaid — remove existing EMI payment from state AND sheet
     entry.paid = false;
     var pmtIdToRemove = existingEmiPmt.id;
     state.loanPayments = state.loanPayments.filter(function(p){return p.id!==pmtIdToRemove;});
     entry.pmtId = null;
-    // Also remove from sheet if possible
-    if (typeof deleteFromSheet === 'function') deleteFromSheet('LoanPayments', pmtIdToRemove);
+    // Delete from Google Sheet
+    if (pmtIdToRemove && cfg.scriptUrl && cfg.sheetId) {
+      fetch(cfg.scriptUrl, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:pmtIdToRemove})
+      });
+    }
   }
   saveData();
   renderLoanList();
