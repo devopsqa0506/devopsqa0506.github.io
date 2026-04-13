@@ -5166,7 +5166,7 @@ function openPlotByIndex(el) {
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount?fmtIN(me.amount):'')+'" placeholder="Amount" '
-        +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'me-w-'+meIdx+'\')" style="font-size:12px">'
+        +'oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,\'\'))||0));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this);showAmtLabel(this.value,\'me-w-'+meIdx+'\')" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5183,7 +5183,7 @@ function openPlotByIndex(el) {
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount?fmtIN(oe.amount):'')+'" placeholder="Amount" '
-        +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
+        +'oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,\'\'))||0));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this);showAmtLabel(this.value,\'oe-w-'+oeIdx+'\')" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5448,7 +5448,7 @@ function recalcHouseTotals(pi, pli) {
 
 function updatePlotField(el, field, type) {
   var pi = Number(el.dataset.pi), pli = Number(el.dataset.pli);
-  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
   saveData();
   // Sync critical fields
   if (['status','type','salePrice','buyer','plotNo','sizeInCents'].indexOf(field) !== -1) {
@@ -5496,7 +5496,7 @@ function addPartialPayment(pi, pli) {
 function updatePartialPayment(el, pi, pli, ppIdx, field, type) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.partialPayments || !plt.partialPayments[ppIdx]) return;
-  plt.partialPayments[ppIdx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  plt.partialPayments[ppIdx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
   saveData();
   if (field === 'amount' || field === 'desc' || field === 'date') {
     recalcPaymentTotal(pi, pli, null);
@@ -5550,7 +5550,7 @@ function addConstructionExpense(pi, pli) {
 function updateConstructionExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.constructionExpenses || !plt.constructionExpenses[idx]) return;
-  plt.constructionExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  plt.constructionExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -5580,7 +5580,7 @@ function addMiscExpense(pi, pli) {
 function updateMiscExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.miscExpenses || !plt.miscExpenses[idx]) return;
-  plt.miscExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  plt.miscExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -5610,7 +5610,7 @@ function addOtherExpense(pi, pli) {
 function updateOtherExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.otherExpenses || !plt.otherExpenses[idx]) return;
-  plt.otherExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  plt.otherExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -7929,7 +7929,7 @@ function renderLoanList() {
           +'<div class="ls-box"><div class="ls-lbl">Principal Paid</div><div class="ls-val sage">'+rup(paidPrin)+' <span style="font-size:10px;color:var(--rose)">('+shortAmt(paidPrin)+')</span></div></div>'
           +'<div class="ls-box"><div class="ls-lbl">Payments</div><div class="ls-val">'+pmts.length+'</div></div>'
         +'</div>'
-        +(loan.emi ? '<div style="background:rgba(58,232,200,0.08);border:1px solid rgba(58,232,200,0.3);border-radius:9px;padding:7px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">EMI / Month</span><span style="font-family:JetBrains Mono;font-size:14px;font-weight:700;color:var(--teal)">'+rup(loan.emi)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(loan.emi)+')</span></span></div>' : '');
+        +(loan.emi ? '<div style="background:rgba(58,232,200,0.08);border:1px solid rgba(58,232,200,0.3);border-radius:9px;padding:7px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">EMI / Month</span><span style="font-family:JetBrains Mono;font-size:14px;font-weight:700;color:var(--teal)">'+fmtIN(loan.emi)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(loan.emi)+')</span></span></div>' : '');
 
     if (loan.notes) {
       html += '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">📝 '+escH(loan.notes)+'</div>';
