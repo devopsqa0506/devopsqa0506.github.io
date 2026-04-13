@@ -5072,6 +5072,10 @@ function openPlotByIndex(el) {
   var landPaid = (state.landPayments||[]).filter(function(p){ return p.projId===proj.id; })
                  .reduce(function(s,p){ return s+Number(p.amount||0); },0);
   var landAdvanceForPlot = proj.totalCents > 0 ? (landPaid / proj.totalCents) * Number(plt.sizeInCents||0) : 0;
+  
+  // Calculate Land Cost Per Cent (deal price per cent for this project)
+  var landCostTotal = Number(proj.landCost||0) || (Number(proj.totalCents||0) * Number(proj.pricePerCent||0));
+  var landCostPerCent = Number(proj.totalCents||0) > 0 ? landCostTotal / Number(proj.totalCents||0) : 0;
 
   // Expense totals
   var constTotal = (plt.constructionExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
@@ -5089,12 +5093,14 @@ function openPlotByIndex(el) {
     +'<div style="font-size:14px;color:var(--tx2);font-family:JetBrains Mono">'+(plt.sizeInCents||0)+' cents</div>'
   +'</div>';
 
-  // Editable Plot No + Size
-  body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+  // Editable Plot No + Size + Land Cost Per Cent
+  body += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">'
     +'<div><label class="fl">Plot No</label>'
       +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center"></div>'
     +'<div><label class="fl">Size (Cents)</label>'
       +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
+    +'<div><label class="fl">Land Cost/Cent</label>'
+      +'<div class="fi fi-mono" style="opacity:0.8;color:var(--sky)">₹'+rup(Math.round(landCostPerCent))+' <span style="font-size:11px;color:var(--tx3)">/cent</span></div></div>'
   +'</div>';
 
   // Type
