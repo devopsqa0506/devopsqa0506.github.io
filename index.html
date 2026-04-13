@@ -4782,7 +4782,7 @@ function renderLandPaymentRows() {
   _pendingLandPmts.forEach(function(row, i) {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-lp-idx="'+i+'">'
       +'<input class="fi fi-mono" type="date" value="'+row.date+'" oninput="_pendingLandPmts['+i+'].date=this.value;updateLandPaidTotal()" style="flex:0 0 130px;margin-bottom:0;font-size:13px">'
-      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount||'')+'" oninput="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" onblur="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
+      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount?fmtIN(row.amount):'')+'" oninput="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value.replace(/,/g,\'\'))||0);updateLandPaidTotal()" onblur="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value.replace(/,/g,\'\'))||0);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<input class="fi" type="text" placeholder="Note" value="'+(row.notes||'')+'" oninput="_pendingLandPmts['+i+'].notes=this.value" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<button type="button" onclick="_pendingLandPmts.splice('+i+',1);renderLandPaymentRows();updateLandPaidTotal()" style="background:none;border:none;color:var(--rose);font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0">×</button>'
     +'</div>';
@@ -5094,13 +5094,13 @@ function openPlotByIndex(el) {
   +'</div>';
 
   // Editable Plot No + Size + Land Cost Per Cent
-  body += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">'
-    +'<div><label class="fl">Plot No</label>'
-      +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center"></div>'
-    +'<div><label class="fl">Size (Cents)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
-    +'<div><label class="fl">Land Cost/Cent</label>'
-      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:13px">₹'+rup(Math.round(landCostPerCent))+'/cent</div></div>'
+  body += '<div style="display:grid;grid-template-columns:80px 110px 130px;gap:8px;margin-bottom:10px">'
+    +'<div><label class="fl" style="font-size:11px">Plot No</label>'
+      +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center;font-size:12px"></div>'
+    +'<div><label class="fl" style="font-size:11px">Size (Cents)</label>'
+      +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')" style="font-size:12px"></div>'
+    +'<div><label class="fl" style="font-size:11px">Cost/Cent</label>'
+      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:12px">'+fmtIN(Math.round(landCostPerCent))+'/c</div></div>'
   +'</div>';
 
   // Type
@@ -5165,7 +5165,7 @@ function openPlotByIndex(el) {
       +'<select class="fi" onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'type\',\'text\',this)" style="font-size:12px">'
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
-      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount||'')+'" placeholder="Amount" '
+      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount?fmtIN(me.amount):'')+'" placeholder="Amount" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'me-w-'+meIdx+'\')" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
@@ -5182,7 +5182,7 @@ function openPlotByIndex(el) {
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center">'
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
-      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount||'')+'" placeholder="Amount" '
+      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount?fmtIN(oe.amount):'')+'" placeholder="Amount" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
