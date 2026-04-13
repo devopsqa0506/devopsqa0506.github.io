@@ -2562,10 +2562,10 @@ function setSyncStatus(s) {
   function pushToSheet(sheetName, headers, row) {
   var url = cfg.scriptUrl || SCRIPT_URL;
   var sid = cfg.sheetId || '';
-  if (!url) { console.warn('SiteBook: no scriptUrl'); return; }
-  if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return; }
+  if (!url) { console.warn('SiteBook: no scriptUrl'); return Promise.resolve(); }
+  if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return Promise.resolve(); }
   // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  fetch(url + '?action=append', {
+  return fetch(url + '?action=append', {
     method: 'POST',
     mode: 'no-cors',
     body: JSON.stringify({sheetId:sid, sheetName:sheetName, headers:headers, row:row})
@@ -2574,9 +2574,9 @@ function setSyncStatus(s) {
 
 // ── deleteFromSheet via GET (avoids 302 redirect on POST) ──
 function deleteFromSheet(sheetName, matchCol, matchVal) {
-  if (!cfg.scriptUrl || !cfg.sheetId) return;
+  if (!cfg.scriptUrl || !cfg.sheetId) return Promise.resolve();
   // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  fetch(cfg.scriptUrl + '?action=deleteRow', {
+  return fetch(cfg.scriptUrl + '?action=deleteRow', {
     method: 'POST',
     mode: 'no-cors',
     body: JSON.stringify({sheetId:cfg.sheetId, sheetName:sheetName, matchCol:matchCol, matchVal:matchVal})
@@ -5390,7 +5390,7 @@ function syncProjectIncome(projId) {
   Promise.resolve(deleteFromSheet('ProjectIncome', 'projId', projId)).then(function() {
     (proj.plots||[]).forEach(function(plt) {
       if (plt.advanceReceived && plt.advanceReceived > 0) {
-        var advId = 'adv_' + plt.id + '_' + Date.now();
+        var advId = 'adv_' + plt.id;
         pushToSheet('ProjectIncome',
           ['id','projId','projectName','plotId','plotNo','incomeType','amount','date','buyerName','notes'],
           [advId, projId, proj.name, plt.id, plt.plotNo||'', 'advance', plt.advanceReceived, plt.date||today(), plt.buyer||'', 'Advance received']
