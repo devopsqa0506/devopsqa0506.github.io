@@ -8396,6 +8396,28 @@ function renderPL() {
     var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalPart||0); },0);
     return s + Math.max(Number(l.principal||0) - paid, 0);
   }, 0);
+  
+  // Calculate total interest accrued across all loans
+  var totalIntAccrued = 0;
+  loans.forEach(function(loan) {
+    if (loan.rate && loan.rateType) {
+      var loanStartDate = new Date(loan.date);
+      var today = new Date();
+      var daysElapsed = Math.floor((today - loanStartDate) / (1000 * 60 * 60 * 24));
+      var annualIntBase = Math.round(Number(loan.principal) * Number(loan.rate) / 100);
+      var accruedInt = 0;
+      if (loan.rateType === 'pa') {
+        accruedInt = Math.round(annualIntBase * daysElapsed / 365);
+      } else if (loan.rateType === 'pm') {
+        accruedInt = Math.round(annualIntBase * daysElapsed / 30);
+      } else if (loan.rateType === 'flat') {
+        accruedInt = Math.round(Number(loan.rate) * daysElapsed / 30);
+      } else if (loan.rateType === '0') {
+        accruedInt = 0;
+      }
+      totalIntAccrued += accruedInt;
+    }
+  });
 
   var html = '';
   // Overall accumulators
@@ -8453,7 +8475,7 @@ function renderPL() {
                     .reduce(function(s,e){ return s+Number(e.amount||0); },0);
 
     var costIncurred = landForCalc + projConstCost + projMiscOther + manualExp;
-    var grossProfit  = soldRevenue - soldCOGS - manualExp;
+    var grossProfit  = soldRevenue - (soldCOGS + manualExp);
     var gpColor      = grossProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
     var outstanding  = Math.max(landCostTotal - landPaid, 0);
     var roi          = (soldRevenue > 0 && soldCOGS > 0)
@@ -8506,21 +8528,38 @@ function renderPL() {
     var overallNet    = overallGross - totalInterestPaid;
     var ogColor       = overallGross >= 0 ? 'var(--sage)' : 'var(--rose)';
     var onColor       = overallNet   >= 0 ? 'var(--sage)' : 'var(--rose)';
+    
+    // New metrics
+    var pendingCollection = Math.max(allRevenue - allReceived, 0);
+    var intAccruedNotPaid = Math.max(totalIntAccrued - totalInterestPaid, 0);
+    var overallROI = (allCOGS > 0) ? ((overallGross / allCOGS) * 100).toFixed(1) : 0;
+    var cashFlow = allReceived - allCostIncurred;
+    var cfColor = cashFlow >= 0 ? 'var(--sage)' : 'var(--rose)';
+    
     elOverall.innerHTML = '<div style="background:linear-gradient(135deg,rgba(232,184,74,0.08),rgba(58,232,200,0.05));border:1px solid rgba(232,184,74,0.3);border-radius:13px;padding:14px;margin-bottom:4px">'
       +'<div style="font-size:13px;font-weight:700;color:var(--amb);margin-bottom:10px">📊 Company P&amp;L — All Projects</div>'
       +'<div class="fin-summary">'
         +'<div class="fsum-box"><div class="fsum-lbl">Total Borrowed</div><div class="fsum-val" style="color:var(--amb)">'+rup(totalBorrowed)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(totalBorrowed)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Outstanding Debt</div><div class="fsum-val" style="color:var(--rose)">'+rup(totalOutstanding)+' <span style="font-size:11px;font-weight:600;color:var(--amb)">('+shortAmt(totalOutstanding)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Interest Paid</div><div class="fsum-val" style="color:var(--sky)">'+rup(totalInterestPaid)+' <span style="font-size:11px;font-weight:600;color:var(--teal)">('+shortAmt(totalInterestPaid)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Total Cost Incurred</div><div class="fsum-val" style="color:var(--rose)">'+rup(allCostIncurred)+' <span style="font-size:11px;font-weight:600;color:var(--sage)">('+shortAmt(allCostIncurred)+')</span></div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Interest Accrued</div><div class="fsum-val" style="color:var(--amb)">'+rup(totalIntAccrued)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(totalIntAccrued)+')</span></div></div>'
       +'</div>'
       +(hasSales ? '<div class="fin-summary" style="margin-top:8px">'
         +'<div class="fsum-box"><div class="fsum-lbl">Revenue (Sold)</div><div class="fsum-val" style="color:var(--sage)">'+rup(allRevenue)+' <span style="font-size:11px;font-weight:600;color:var(--amb)">('+shortAmt(allRevenue)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Received So Far</div><div class="fsum-val" style="color:var(--teal)">'+rup(allReceived)+' <span style="font-size:11px;font-weight:600;color:var(--rose)">('+shortAmt(allReceived)+')</span></div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Pending Collection</div><div class="fsum-val" style="color:var(--amb)">'+rup(pendingCollection)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(pendingCollection)+')</span></div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Interest Unpaid</div><div class="fsum-val" style="color:var(--rose)">'+rup(intAccruedNotPaid)+' <span style="font-size:11px;font-weight:600;color:var(--teal)">('+shortAmt(intAccruedNotPaid)+')</span></div></div>'
+      +'</div>' : '')
+      +'<div class="fin-summary" style="margin-top:8px">'
+        +'<div class="fsum-box"><div class="fsum-lbl">Total Cost Incurred</div><div class="fsum-val" style="color:var(--rose)">'+rup(allCostIncurred)+' <span style="font-size:11px;font-weight:600;color:var(--sage)">('+shortAmt(allCostIncurred)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Gross Profit</div><div class="fsum-val" style="color:'+ogColor+'">'+(overallGross>=0?'+':'')+rup(overallGross)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(overallGross)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl" style="font-weight:700">Net Profit</div><div class="fsum-val" style="color:'+onColor+';font-size:18px">'+(overallNet>=0?'+':'')+rup(overallNet)+' <span style="font-size:12px;font-weight:600;color:var(--amb)">('+shortAmt(overallNet)+')</span></div></div>'
-      +'</div>' : '<div style="padding:8px 0;font-size:12px;color:var(--tx3);text-align:center">Mark plots as Sold to see Revenue &amp; Profit</div>')
-    +'</div>';
+        +'<div class="fsum-box"><div class="fsum-lbl">Overall ROI %</div><div class="fsum-val" style="color:var(--sage);font-weight:700">'+overallROI+'%</div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Cash Flow</div><div class="fsum-val" style="color:'+cfColor+';font-weight:700">'+(cashFlow>=0?'+':'')+rup(cashFlow)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(cashFlow)+')</span></div></div>'
+      +'</div>'
+      +'<div class="fin-summary" style="margin-top:8px;border-top:1px solid var(--bd);padding-top:8px">'
+        +'<div class="fsum-box" style="grid-column:1/-1"><div class="fsum-lbl" style="font-weight:700">Net Profit (After Interest)</div><div class="fsum-val" style="color:'+onColor+';font-size:18px;font-weight:700">'+(overallNet>=0?'+':'')+rup(overallNet)+' <span style="font-size:12px;font-weight:600;color:var(--amb)">('+shortAmt(overallNet)+')</span></div></div>'
+      +'</div>'
+      +'</div>';
   }
 }
 
