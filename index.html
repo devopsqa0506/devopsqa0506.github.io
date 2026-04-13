@@ -5166,7 +5166,7 @@ function openPlotByIndex(el) {
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount?fmtIN(me.amount):'')+'" placeholder="Amount" '
-        +'oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,\'\'))||0));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this);showAmtLabel(this.value,\'me-w-'+meIdx+'\')" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
+        +'oninput="var rawVal=Math.round(Number(this.value.replace(/,/g,\'\'))||0);this.value=fmtIN(rawVal);updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this);showAmtLabel(rawVal,\'me-w-'+meIdx+'\')" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5183,7 +5183,7 @@ function openPlotByIndex(el) {
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount?fmtIN(oe.amount):'')+'" placeholder="Amount" '
-        +'oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,\'\'))||0));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this);showAmtLabel(this.value,\'oe-w-'+oeIdx+'\')" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
+        +'oninput="var rawVal=Math.round(Number(this.value.replace(/,/g,\'\'))||0);this.value=fmtIN(rawVal);updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this);showAmtLabel(rawVal,\'oe-w-'+oeIdx+'\')" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -7425,11 +7425,11 @@ function calcEmiFromForm() {
   var emiEl     = document.getElementById('ln-emi');
   if (!emiEl || !principal) return;
   if (rateType==='0') {
-    if (term > 0) emiEl.value = Math.round(principal / term);
+    if (term > 0) emiEl.value = fmtIN(Math.round(principal / term));
     return;
   }
   if (rateType==='flat') {
-    if (rate > 0) emiEl.value = Math.round(rate);
+    if (rate > 0) emiEl.value = fmtIN(Math.round(rate));
     return;
   }
   if (!rate) return;
@@ -7437,10 +7437,10 @@ function calcEmiFromForm() {
   if (term > 0) {
     // Standard EMI: P * r * (1+r)^n / ((1+r)^n - 1)
     var pow = Math.pow(1+r, term);
-    emiEl.value = Math.round(principal * r * pow / (pow - 1));
+    emiEl.value = fmtIN(Math.round(principal * r * pow / (pow - 1)));
   } else {
     // Interest-only (no term)
-    emiEl.value = Math.round(principal * r);
+    emiEl.value = fmtIN(Math.round(principal * r));
   }
 }
 
