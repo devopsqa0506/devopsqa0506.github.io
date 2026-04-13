@@ -2657,6 +2657,10 @@ function mergeSheetData(sheetData) {
       var obj = {};
       pHdrs.forEach(function(h,i){ obj[h]=r[i]; });
       if (!obj.id) return;
+      // Round numeric project fields from sheet
+      ['landCost','totalCents','pricePerCent'].forEach(function(k) {
+        if (obj[k] !== undefined && obj[k] !== null) obj[k] = Math.round(Number(obj[k])||0);
+      });
       // Parse plotsJson from sheet back into plots array
       if (obj.plotsJson) {
         try { obj.plots = JSON.parse(obj.plotsJson); } catch(e) { obj.plots = []; }
@@ -4814,9 +4818,9 @@ function saveProject() {
     id: editId || ('proj_' + Date.now()),
     name: name,
     projType: 'venture',
-    landCost: Math.round(Number(document.getElementById('p-landcost').value) || 0),
+    landCost: Math.round(Number(document.getElementById('p-landcost').value.replace(/,/g,'')) || 0),
     totalCents: Math.round(Number(document.getElementById('p-cents').value) || 0),
-    pricePerCent: Math.round(Number(document.getElementById('p-price-per-cent').value) || 0),
+    pricePerCent: Math.round(Number(document.getElementById('p-price-per-cent').value.replace(/,/g,'')) || 0),
     status: document.getElementById('p-status').value,
     date: document.getElementById('p-date').value || today(),
     dealEndDate: document.getElementById('p-deal-end-date').value || '',
