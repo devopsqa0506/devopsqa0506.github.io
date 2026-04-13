@@ -3065,13 +3065,13 @@ function renderDocList() {
         r.lineItems.forEach(function(li) {
           finHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;font-size:12px;padding:5px 10px;border-bottom:1px solid var(--bd)">'
             +'<span style="color:var(--tx)">'+escH(li.itemName||'')+'</span>'
-            +'<span style="text-align:right;padding-right:8px;color:var(--tx2);font-size:11px;font-family:JetBrains Mono">'+(li.quantity!=null?(li.quantity+(li.unit?' '+li.unit:'')):'')+(li.unitRate?' @₹'+li.unitRate:'')+'</span>'
+            +'<span style="text-align:right;padding-right:8px;color:var(--tx2);font-size:11px;font-family:JetBrains Mono">'+(li.quantity!=null?(li.quantity+(li.unit?' '+li.unit:'')):'')+(li.unitRate?' @₹'+fmtIN(Number(li.unitRate)):'')+'</span>'
             +'<span style="text-align:right;color:var(--amb);font-weight:700;font-family:JetBrains Mono">'+(li.lineTotal?'₹'+fmtIN(Number(li.lineTotal)):'—')+'</span>'
             +'</div>';
         });
         finHtml += '</div>';
       }
-      if (r.amount) finHtml += '<div class="fin-grid" style="margin-top:8px"><div class="fin-card invest"><div class="fin-lbl" style="color:var(--teal)">💰 Bill Total</div><div class="fin-val teal">'+escH(String(r.amount))+'</div></div></div>';
+      if (r.amount) finHtml += '<div class="fin-grid" style="margin-top:8px"><div class="fin-card invest"><div class="fin-lbl" style="color:var(--teal)">💰 Bill Total</div><div class="fin-val teal">'+fixAmountStr(String(r.amount))+'</div></div></div>';
     } else {
       var hasAnyFin = fv(fin.saleAmount)||fv(fin.stampDuty)||fv(fin.totalInvestment);
       if (hasAnyFin) {
@@ -4026,7 +4026,7 @@ function buildDocResultHtml(r) {
     if (r.vendorPhone)   html += '<div class="crow"><span class="ck">📞 Vendor Phone</span><span class="cv" style="font-family:JetBrains Mono">'+escH(r.vendorPhone)+'</span></div>';
     if (r.invoiceNumber) html += '<div class="crow"><span class="ck">🔢 Invoice / Bill No.</span><span class="cv" style="font-family:JetBrains Mono">'+escH(r.invoiceNumber)+'</span></div>';
     if (r.documentDate)  html += '<div class="crow"><span class="ck">📅 Bill Date</span><span class="cv">'+escH(r.documentDate)+'</span></div>';
-    if (r.gstAmount)     html += '<div class="crow"><span class="ck">🏷️ GST / Tax</span><span class="cv">'+escH(String(r.gstAmount))+'</span></div>';
+    if (r.gstAmount)     html += '<div class="crow"><span class="ck">🏷️ GST / Tax</span><span class="cv">'+fixAmountStr(String(r.gstAmount))+'</span></div>';
     html += '</div>';
 
     // Line items table
@@ -4042,7 +4042,7 @@ function buildDocResultHtml(r) {
         html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--bd);'+cs+'">'
           +'<span style="padding-right:6px;line-height:1.4">'+escH(li.itemName||'')+'<br><span style="font-size:10px;color:var(--tx3)">'+escH(li.itemKey||'')+'</span></span>'
           +'<span style="text-align:right;color:var(--tx2);font-family:JetBrains Mono;font-size:11px;white-space:nowrap">'+(li.quantity!=null?(li.quantity+' '+(li.unit||'')):'—')+'</span>'
-          +'<span style="text-align:right;padding:0 8px;color:var(--tx2);font-family:JetBrains Mono;font-size:11px">'+(li.unitRate?'₹'+li.unitRate:'—')+'</span>'
+          +'<span style="text-align:right;padding:0 8px;color:var(--amb);font-family:JetBrains Mono;font-size:11px;font-weight:700">'+(li.unitRate?'₹'+fmtIN(Number(li.unitRate)):'—')+'</span>'
           +'<span style="text-align:right;color:var(--amb);font-family:JetBrains Mono;font-weight:700;font-size:12px">'+(li.lineTotal?'₹'+fmtIN(Number(li.lineTotal)):'—')+'</span>'
           +'</div>';
       });
@@ -4059,7 +4059,7 @@ function buildDocResultHtml(r) {
     if (r.amount) {
       html += '<div class="ccard" style="margin-top:8px;background:rgba(58,232,200,0.05);border-color:rgba(58,232,200,0.3)">'
         +'<div class="crow"><span class="ck" style="color:var(--teal);font-weight:700;font-size:14px">💰 Bill Total</span>'
-        +'<span class="cv" style="color:var(--teal);font-size:18px;font-weight:700">'+escH(String(r.amount))+'</span></div>'
+        +'<span class="cv" style="color:var(--teal);font-size:18px;font-weight:700">'+fixAmountStr(String(r.amount))+'</span></div>'
         +'</div>';
     }
 
@@ -4213,7 +4213,7 @@ function buildBillConfirmCard(result, docId) {
       liHtml += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0;font-size:12px;padding:5px 10px;border-bottom:1px solid var(--bd);color:var(--tx)">'
         +'<span style="padding-right:6px">'+escH(li.itemName||'')+'</span>'
         +'<span style="text-align:right;color:var(--tx2);font-family:JetBrains Mono">'+(li.quantity?(li.quantity+' '+(li.unit||'')):'—')+'</span>'
-        +'<span style="text-align:right;padding:0 8px;color:var(--tx2);font-family:JetBrains Mono">'+(li.unitRate?'₹'+li.unitRate:'—')+'</span>'
+        +'<span style="text-align:right;padding:0 8px;color:var(--amb);font-family:JetBrains Mono;font-weight:700">'+(li.unitRate?'₹'+fmtIN(Number(li.unitRate)):'—')+'</span>'
         +'<span style="text-align:right;color:var(--amb);font-family:JetBrains Mono;font-weight:700">'+(li.lineTotal?'₹'+fmtIN(li.lineTotal):'—')+'</span>'
         +'</div>';
     });
@@ -5100,7 +5100,7 @@ function openPlotByIndex(el) {
     +'<div><label class="fl">Size (Cents)</label>'
       +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
     +'<div><label class="fl">Land Cost/Cent</label>'
-      +'<div class="fi fi-mono" style="opacity:0.8;color:var(--sky)">₹'+rup(Math.round(landCostPerCent))+' <span style="font-size:11px;color:var(--tx3)">/cent</span></div></div>'
+      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:13px">₹'+rup(Math.round(landCostPerCent))+'/cent</div></div>'
   +'</div>';
 
   // Type
