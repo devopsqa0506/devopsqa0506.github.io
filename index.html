@@ -1435,7 +1435,7 @@ input[type=number] { -moz-appearance:textfield; }
       </div>
       <div>
         <label class="fl">Price per Cent (₹)</label>
-        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcLandTotal()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcLandTotal()">
+        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="calcLandTotal()" onblur="calcLandTotal()">
       </div>
     </div>
     <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 14px;margin-bottom:10px">
@@ -1719,7 +1719,7 @@ input[type=number] { -moz-appearance:textfield; }
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
         <div>
           <label class="fl">Amount (₹) *</label>
-          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
+          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" oninput="calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
           <div id="ln-amount-words" style="font-size:11px;color:var(--sage);margin-top:2px;text-align:right"></div>
         </div>
         <div><label class="fl">Date Borrowed *</label><input class="fi" id="ln-date" type="date"></div>
@@ -1740,7 +1740,7 @@ input[type=number] { -moz-appearance:textfield; }
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
-        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm()"></div>
+        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" oninput="calcEmiFromForm()" onblur="calcEmiFromForm()"></div>
         <div><label class="fl">Term (months)</label><input class="fi fi-mono" id="ln-term" type="text" inputmode="numeric" placeholder="12" oninput="calcEmiFromForm()" onblur="calcEmiFromForm()"></div>
       </div>
     </div>
@@ -1759,7 +1759,7 @@ input[type=number] { -moz-appearance:textfield; }
           </div>
           <div>
             <label class="fl">Interest Paid (₹)</label>
-            <input class="fi fi-mono" id="ln-hl-int-paid" type="text" inputmode="numeric" placeholder="0" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcHandLoanInterest()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcHandLoanInterest()">
+            <input class="fi fi-mono" id="ln-hl-int-paid" type="text" inputmode="numeric" placeholder="0" oninput="calcHandLoanInterest()" onblur="calcHandLoanInterest()">
           </div>
         </div>
         <label class="fl" style="margin-top:6px">Interest Balance (₹)</label>
@@ -2657,13 +2657,12 @@ function mergeSheetData(sheetData) {
       var obj = {};
       pHdrs.forEach(function(h,i){ obj[h]=r[i]; });
       if (!obj.id) return;
-      // Round numeric project fields from sheet
-      ['landCost','totalCents','pricePerCent'].forEach(function(k) {
-        if (obj[k] !== undefined && obj[k] !== null) obj[k] = Math.round(Number(obj[k])||0);
-      });
       // Parse plotsJson from sheet back into plots array
       if (obj.plotsJson) {
         try { obj.plots = JSON.parse(obj.plotsJson); } catch(e) { obj.plots = []; }
+      } else {
+        obj.plots = obj.plots || [];
+      }
         // Round all amounts in parsed plots
         (obj.plots||[]).forEach(function(plt) {
           ['salePrice','advanceReceived','constructionCost'].forEach(function(k) {
@@ -2674,7 +2673,6 @@ function mergeSheetData(sheetData) {
           (plt.otherExpenses||[]).forEach(function(e){ e.amount = Math.round(Number(e.amount)||0); });
           (plt.partialPayments||[]).forEach(function(pp){ pp.amount = Math.round(Number(pp.amount)||0); });
         });
-      }
       if (!obj.houses) obj.houses = [];
       if (!obj.agreements) obj.agreements = [];
       // Update existing project or add new one — sheet wins
@@ -3069,13 +3067,13 @@ function renderDocList() {
         r.lineItems.forEach(function(li) {
           finHtml += '<div style="display:grid;grid-template-columns:1fr auto auto;font-size:12px;padding:5px 10px;border-bottom:1px solid var(--bd)">'
             +'<span style="color:var(--tx)">'+escH(li.itemName||'')+'</span>'
-            +'<span style="text-align:right;padding-right:8px;color:var(--tx2);font-size:11px;font-family:JetBrains Mono">'+(li.quantity!=null?(li.quantity+(li.unit?' '+li.unit:'')):'')+(li.unitRate?' @₹'+fmtIN(Number(li.unitRate)):'')+'</span>'
+            +'<span style="text-align:right;padding-right:8px;color:var(--tx2);font-size:11px;font-family:JetBrains Mono">'+(li.quantity!=null?(li.quantity+(li.unit?' '+li.unit:'')):'')+(li.unitRate?' @₹'+li.unitRate:'')+'</span>'
             +'<span style="text-align:right;color:var(--amb);font-weight:700;font-family:JetBrains Mono">'+(li.lineTotal?'₹'+fmtIN(Number(li.lineTotal)):'—')+'</span>'
             +'</div>';
         });
         finHtml += '</div>';
       }
-      if (r.amount) finHtml += '<div class="fin-grid" style="margin-top:8px"><div class="fin-card invest"><div class="fin-lbl" style="color:var(--teal)">💰 Bill Total</div><div class="fin-val teal">'+fixAmountStr(String(r.amount))+'</div></div></div>';
+      if (r.amount) finHtml += '<div class="fin-grid" style="margin-top:8px"><div class="fin-card invest"><div class="fin-lbl" style="color:var(--teal)">💰 Bill Total</div><div class="fin-val teal">'+escH(String(r.amount))+'</div></div></div>';
     } else {
       var hasAnyFin = fv(fin.saleAmount)||fv(fin.stampDuty)||fv(fin.totalInvestment);
       if (hasAnyFin) {
@@ -4030,7 +4028,7 @@ function buildDocResultHtml(r) {
     if (r.vendorPhone)   html += '<div class="crow"><span class="ck">📞 Vendor Phone</span><span class="cv" style="font-family:JetBrains Mono">'+escH(r.vendorPhone)+'</span></div>';
     if (r.invoiceNumber) html += '<div class="crow"><span class="ck">🔢 Invoice / Bill No.</span><span class="cv" style="font-family:JetBrains Mono">'+escH(r.invoiceNumber)+'</span></div>';
     if (r.documentDate)  html += '<div class="crow"><span class="ck">📅 Bill Date</span><span class="cv">'+escH(r.documentDate)+'</span></div>';
-    if (r.gstAmount)     html += '<div class="crow"><span class="ck">🏷️ GST / Tax</span><span class="cv">'+fixAmountStr(String(r.gstAmount))+'</span></div>';
+    if (r.gstAmount)     html += '<div class="crow"><span class="ck">🏷️ GST / Tax</span><span class="cv">'+escH(String(r.gstAmount))+'</span></div>';
     html += '</div>';
 
     // Line items table
@@ -4046,7 +4044,7 @@ function buildDocResultHtml(r) {
         html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--bd);'+cs+'">'
           +'<span style="padding-right:6px;line-height:1.4">'+escH(li.itemName||'')+'<br><span style="font-size:10px;color:var(--tx3)">'+escH(li.itemKey||'')+'</span></span>'
           +'<span style="text-align:right;color:var(--tx2);font-family:JetBrains Mono;font-size:11px;white-space:nowrap">'+(li.quantity!=null?(li.quantity+' '+(li.unit||'')):'—')+'</span>'
-          +'<span style="text-align:right;padding:0 8px;color:var(--amb);font-family:JetBrains Mono;font-size:11px;font-weight:700">'+(li.unitRate?'₹'+fmtIN(Number(li.unitRate)):'—')+'</span>'
+          +'<span style="text-align:right;padding:0 8px;color:var(--tx2);font-family:JetBrains Mono;font-size:11px">'+(li.unitRate?'₹'+li.unitRate:'—')+'</span>'
           +'<span style="text-align:right;color:var(--amb);font-family:JetBrains Mono;font-weight:700;font-size:12px">'+(li.lineTotal?'₹'+fmtIN(Number(li.lineTotal)):'—')+'</span>'
           +'</div>';
       });
@@ -4063,7 +4061,7 @@ function buildDocResultHtml(r) {
     if (r.amount) {
       html += '<div class="ccard" style="margin-top:8px;background:rgba(58,232,200,0.05);border-color:rgba(58,232,200,0.3)">'
         +'<div class="crow"><span class="ck" style="color:var(--teal);font-weight:700;font-size:14px">💰 Bill Total</span>'
-        +'<span class="cv" style="color:var(--teal);font-size:18px;font-weight:700">'+fixAmountStr(String(r.amount))+'</span></div>'
+        +'<span class="cv" style="color:var(--teal);font-size:18px;font-weight:700">'+escH(String(r.amount))+'</span></div>'
         +'</div>';
     }
 
@@ -4217,7 +4215,7 @@ function buildBillConfirmCard(result, docId) {
       liHtml += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0;font-size:12px;padding:5px 10px;border-bottom:1px solid var(--bd);color:var(--tx)">'
         +'<span style="padding-right:6px">'+escH(li.itemName||'')+'</span>'
         +'<span style="text-align:right;color:var(--tx2);font-family:JetBrains Mono">'+(li.quantity?(li.quantity+' '+(li.unit||'')):'—')+'</span>'
-        +'<span style="text-align:right;padding:0 8px;color:var(--amb);font-family:JetBrains Mono;font-weight:700">'+(li.unitRate?'₹'+fmtIN(Number(li.unitRate)):'—')+'</span>'
+        +'<span style="text-align:right;padding:0 8px;color:var(--tx2);font-family:JetBrains Mono">'+(li.unitRate?'₹'+li.unitRate:'—')+'</span>'
         +'<span style="text-align:right;color:var(--amb);font-family:JetBrains Mono;font-weight:700">'+(li.lineTotal?'₹'+fmtIN(li.lineTotal):'—')+'</span>'
         +'</div>';
     });
@@ -4765,7 +4763,7 @@ var _pendingLandPmts = []; // [{id,date,amount,notes}]
 
 function calcLandTotal() {
   var cents = Number(document.getElementById('p-cents').value) || 0;
-  var ppc   = Number(document.getElementById('p-price-per-cent').value.replace(/,/g,'')) || 0;
+  var ppc   = Number(document.getElementById('p-price-per-cent').value) || 0;
   var total = cents * ppc;
   document.getElementById('p-landtotal-display').textContent = '₹' + fmtIN(total);
   document.getElementById('p-landcost').value = total;
@@ -4786,7 +4784,7 @@ function renderLandPaymentRows() {
   _pendingLandPmts.forEach(function(row, i) {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-lp-idx="'+i+'">'
       +'<input class="fi fi-mono" type="date" value="'+row.date+'" oninput="_pendingLandPmts['+i+'].date=this.value;updateLandPaidTotal()" style="flex:0 0 130px;margin-bottom:0;font-size:13px">'
-      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount?fmtIN(row.amount):'')+'" oninput="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value.replace(/,/g,\'\'))||0);updateLandPaidTotal()" onblur="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value.replace(/,/g,\'\'))||0);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
+      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount||'')+'" oninput="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" onblur="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<input class="fi" type="text" placeholder="Note" value="'+(row.notes||'')+'" oninput="_pendingLandPmts['+i+'].notes=this.value" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<button type="button" onclick="_pendingLandPmts.splice('+i+',1);renderLandPaymentRows();updateLandPaidTotal()" style="background:none;border:none;color:var(--rose);font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0">×</button>'
     +'</div>';
@@ -4818,9 +4816,9 @@ function saveProject() {
     id: editId || ('proj_' + Date.now()),
     name: name,
     projType: 'venture',
-    landCost: Math.round(Number(document.getElementById('p-landcost').value.replace(/,/g,'')) || 0),
+    landCost: Math.round(Number(document.getElementById('p-landcost').value) || 0),
     totalCents: Math.round(Number(document.getElementById('p-cents').value) || 0),
-    pricePerCent: Math.round(Number(document.getElementById('p-price-per-cent').value.replace(/,/g,'')) || 0),
+    pricePerCent: Math.round(Number(document.getElementById('p-price-per-cent').value) || 0),
     status: document.getElementById('p-status').value,
     date: document.getElementById('p-date').value || today(),
     dealEndDate: document.getElementById('p-deal-end-date').value || '',
@@ -4896,7 +4894,7 @@ function openEditProject(projId) {
   document.getElementById('p-modal-title').textContent = '✏️ Edit Venture';
   document.getElementById('p-name').value = proj.name || '';
   document.getElementById('p-cents').value = proj.totalCents || '';
-  document.getElementById('p-price-per-cent').value = proj.pricePerCent ? fmtIN(proj.pricePerCent) : '';
+  document.getElementById('p-price-per-cent').value = proj.pricePerCent || '';
   calcLandTotal();
   document.getElementById('p-status').value = proj.status || 'active';
   document.getElementById('p-date').value = proj.date || '';
@@ -5076,10 +5074,6 @@ function openPlotByIndex(el) {
   var landPaid = (state.landPayments||[]).filter(function(p){ return p.projId===proj.id; })
                  .reduce(function(s,p){ return s+Number(p.amount||0); },0);
   var landAdvanceForPlot = proj.totalCents > 0 ? (landPaid / proj.totalCents) * Number(plt.sizeInCents||0) : 0;
-  
-  // Calculate Land Cost Per Cent (deal price per cent for this project)
-  var landCostTotal = Number(proj.landCost||0) || (Number(proj.totalCents||0) * Number(proj.pricePerCent||0));
-  var landCostPerCent = Number(proj.totalCents||0) > 0 ? landCostTotal / Number(proj.totalCents||0) : 0;
 
   // Expense totals
   var constTotal = (plt.constructionExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
@@ -5097,14 +5091,12 @@ function openPlotByIndex(el) {
     +'<div style="font-size:14px;color:var(--tx2);font-family:JetBrains Mono">'+(plt.sizeInCents||0)+' cents</div>'
   +'</div>';
 
-  // Editable Plot No + Size + Land Cost Per Cent
-  body += '<div style="display:grid;grid-template-columns:90px 120px 140px;gap:10px;margin-bottom:10px">'
-    +'<div><label class="fl" style="font-size:11px">Plot No</label>'
-      +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center;font-size:12px"></div>'
-    +'<div><label class="fl" style="font-size:11px">Size (Cents)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')" style="font-size:12px"></div>'
-    +'<div><label class="fl" style="font-size:11px">Cost/Cent</label>'
-      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:12px">'+fmtIN(Math.round(landCostPerCent))+'</div></div>'
+  // Editable Plot No + Size
+  body += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+    +'<div><label class="fl">Plot No</label>'
+      +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center"></div>'
+    +'<div><label class="fl">Size (Cents)</label>'
+      +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
   +'</div>';
 
   // Type
@@ -5141,7 +5133,7 @@ function openPlotByIndex(el) {
         ? '<div class="fi" style="opacity:0.7;font-size:12px">Advance Construction</div>'
         : '<input type="text" class="fi" value="'+escH(ce.desc||'')+'" placeholder="Description" '
             +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'desc\',\'text\',this)" style="font-size:12px">')
-      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(ce.amount?fmtIN(ce.amount):'')+'" placeholder="Amount" '
+      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(ce.amount||'')+'" placeholder="Amount" '
         +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" onblur="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'ce-w-'+ceIdx+'\')" style="font-size:12px">'
         +'<div id="ce-w-'+ceIdx+'" style="font-size:11px;font-weight:600;color:var(--sky);margin-top:2px;min-height:14px">'+(ce.amount?amtWords(ce.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(ce.date||'')+'" '
@@ -5169,8 +5161,8 @@ function openPlotByIndex(el) {
       +'<select class="fi" onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'type\',\'text\',this)" style="font-size:12px">'
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
-      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount?fmtIN(me.amount):'')+'" placeholder="Amount" '
-        +'oninput="var rawVal=Math.round(Number(this.value.replace(/,/g,\'\'))||0);this.value=fmtIN(rawVal);updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this);showAmtLabel(rawVal,\'me-w-'+meIdx+'\')" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
+      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(me.amount||'')+'" placeholder="Amount" '
+        +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'me-w-'+meIdx+'\')" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5186,8 +5178,8 @@ function openPlotByIndex(el) {
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center">'
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
-      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount?fmtIN(oe.amount):'')+'" placeholder="Amount" '
-        +'oninput="var rawVal=Math.round(Number(this.value.replace(/,/g,\'\'))||0);this.value=fmtIN(rawVal);updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this);showAmtLabel(rawVal,\'oe-w-'+oeIdx+'\')" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" style="font-size:12px">'
+      +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(oe.amount||'')+'" placeholder="Amount" '
+        +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value,\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5227,8 +5219,8 @@ function openPlotByIndex(el) {
       +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'salePrice\',\'num\')" onblur="updatePlotField(this,\'salePrice\',\'num\')" oninput="showAmtLabel(this.value,\'sp-words\'); updatePlotProfitInstant('+pi+','+pli+',this.value)">'
       +'<div id="sp-words" style="font-size:12px;font-weight:600;color:var(--amb);margin-top:3px;min-height:16px">'+(plt.salePrice?amtWords(plt.salePrice):'')+'</div>'
       +'<label class="fl" style="margin-top:9px">Advance Received (₹)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-adv-rcvd" value="'+(plt.advanceReceived?fmtIN(plt.advanceReceived):'')+'" placeholder="Token / advance amount" '
-      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'advanceReceived\',\'num\')" onblur="updatePlotField(this,\'advanceReceived\',\'num\')" oninput="recalcPaymentTotal('+pi+','+pli+',this.value.replace(/,/g,\'\')); showAmtLabel(this.value,\'adv-words\')">'
+      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-adv-rcvd" value="'+(plt.advanceReceived||'')+'" placeholder="Token / advance amount" '
+      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'advanceReceived\',\'num\')" onblur="updatePlotField(this,\'advanceReceived\',\'num\')" oninput="recalcPaymentTotal('+pi+','+pli+',this.value); showAmtLabel(this.value,\'adv-words\')">'
       +'<div id="adv-words" style="font-size:12px;font-weight:600;color:var(--teal);margin-top:3px;min-height:16px">'+(plt.advanceReceived?amtWords(plt.advanceReceived):'')+'</div>'
       +'<label class="fl" style="margin-top:9px">Buyer Name</label>'
       +'<input type="text" class="fi" value="'+escH(plt.buyer||'')+'" placeholder="Buyer పేరు" '
@@ -5244,7 +5236,7 @@ function openPlotByIndex(el) {
           +'<input type="text" class="fi" value="'+escH(pp.desc||'')+'" placeholder="Description" '
             +'data-pi="'+pi+'" data-pli="'+pli+'" data-ppidx="'+ppIdx+'" '
             +'onchange="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'desc\',\'text\')" style="font-size:12px">'
-          +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(pp.amount?fmtIN(pp.amount):'')+'" placeholder="Amount" '
+          +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(pp.amount||'')+'" placeholder="Amount" '
             +'data-pi="'+pi+'" data-pli="'+pli+'" data-ppidx="'+ppIdx+'" '
             +'onchange="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" onblur="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" oninput="recalcPaymentTotal('+pi+','+pli+',null); showAmtLabel(this.value,\'pp-w-'+ppIdx+'\')" style="font-size:12px">'
             +'<div id="pp-w-'+ppIdx+'" style="font-size:11px;font-weight:600;color:var(--sage);margin-top:2px;min-height:14px">'+(pp.amount?amtWords(pp.amount):'')+'</div></div>'
@@ -5452,7 +5444,7 @@ function recalcHouseTotals(pi, pli) {
 
 function updatePlotField(el, field, type) {
   var pi = Number(el.dataset.pi), pli = Number(el.dataset.pli);
-  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
+  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
   saveData();
   // Sync critical fields
   if (['status','type','salePrice','buyer','plotNo','sizeInCents'].indexOf(field) !== -1) {
@@ -5500,7 +5492,7 @@ function addPartialPayment(pi, pli) {
 function updatePartialPayment(el, pi, pli, ppIdx, field, type) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.partialPayments || !plt.partialPayments[ppIdx]) return;
-  plt.partialPayments[ppIdx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
+  plt.partialPayments[ppIdx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
   saveData();
   if (field === 'amount' || field === 'desc' || field === 'date') {
     recalcPaymentTotal(pi, pli, null);
@@ -5554,7 +5546,7 @@ function addConstructionExpense(pi, pli) {
 function updateConstructionExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.constructionExpenses || !plt.constructionExpenses[idx]) return;
-  plt.constructionExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
+  plt.constructionExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -5584,7 +5576,7 @@ function addMiscExpense(pi, pli) {
 function updateMiscExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.miscExpenses || !plt.miscExpenses[idx]) return;
-  plt.miscExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
+  plt.miscExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -5614,7 +5606,7 @@ function addOtherExpense(pi, pli) {
 function updateOtherExpense(pi, pli, idx, field, type, el) {
   var plt = state.projects[pi].plots[pli];
   if (!plt.otherExpenses || !plt.otherExpenses[idx]) return;
-  plt.otherExpenses[idx][field] = type==='num' ? Math.round(Number(el.value.replace(/,/g,''))||0) : el.value;
+  plt.otherExpenses[idx][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
   saveData();
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
@@ -7422,18 +7414,18 @@ if (!state.emiSchedule)  state.emiSchedule  = [];
 
 // ── EMI Auto-Calc ──
 function calcEmiFromForm() {
-  var principal = Number(document.getElementById('ln-principal').value.replace(/,/g,''))||0;
+  var principal = Number(document.getElementById('ln-principal').value)||0;
   var rate      = Number(document.getElementById('ln-rate').value)||0;
   var rateType  = document.getElementById('ln-ratetype').value;
   var term      = Number(document.getElementById('ln-term').value)||0;
   var emiEl     = document.getElementById('ln-emi');
   if (!emiEl || !principal) return;
   if (rateType==='0') {
-    if (term > 0) emiEl.value = fmtIN(Math.round(principal / term));
+    if (term > 0) emiEl.value = Math.round(principal / term);
     return;
   }
   if (rateType==='flat') {
-    if (rate > 0) emiEl.value = fmtIN(Math.round(rate));
+    if (rate > 0) emiEl.value = Math.round(rate);
     return;
   }
   if (!rate) return;
@@ -7441,15 +7433,15 @@ function calcEmiFromForm() {
   if (term > 0) {
     // Standard EMI: P * r * (1+r)^n / ((1+r)^n - 1)
     var pow = Math.pow(1+r, term);
-    emiEl.value = fmtIN(Math.round(principal * r * pow / (pow - 1)));
+    emiEl.value = Math.round(principal * r * pow / (pow - 1));
   } else {
     // Interest-only (no term)
-    emiEl.value = fmtIN(Math.round(principal * r));
+    emiEl.value = Math.round(principal * r);
   }
 }
 
 function updateLoanAmountWords() {
-  var amt = Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0;
+  var amt = Number(document.getElementById('ln-principal').value) || 0;
   var wordsEl = document.getElementById('ln-amount-words');
   if (wordsEl) wordsEl.textContent = amt > 0 ? amtWords(amt) : '';
 }
@@ -7572,9 +7564,9 @@ function onLoanTypeChange() {
 
 // ── HandLoan interest auto-calc ──
 function calcHandLoanInterest() {
-  var principal = Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0;
+  var principal = Number(document.getElementById('ln-principal').value) || 0;
   var rate      = Number(document.getElementById('ln-hl-rate').value) || 0;
-  var intPaid   = Number(document.getElementById('ln-hl-int-paid').value.replace(/,/g,'')) || 0;
+  var intPaid   = Number(document.getElementById('ln-hl-int-paid').value) || 0;
   var loanDate  = document.getElementById('ln-date').value;
   var track     = document.getElementById('ln-hl-track');
   if (!track) return;
@@ -7589,8 +7581,8 @@ function calcHandLoanInterest() {
     var annualInt = Math.round(principal * rate / 100);
     var proratedInt = Math.round(annualInt * daysElapsed / 365);
     var balance  = Math.max(proratedInt - intPaid, 0);
-    document.getElementById('ln-hl-total-int').textContent   = fmtIN(proratedInt) + ' (till today)';
-    document.getElementById('ln-hl-int-balance').textContent = fmtIN(balance);
+    document.getElementById('ln-hl-total-int').textContent   = rup(proratedInt) + ' (till today)';
+    document.getElementById('ln-hl-int-balance').textContent = rup(balance);
   }
 }
 
@@ -7602,16 +7594,16 @@ function openEditLoan(loanId) {
   document.getElementById('ln-edit-id').value  = loan.id;
   document.getElementById('ln-type').value     = loan.loanType || 'bank';
   document.getElementById('ln-name').value     = loan.name || '';
-  document.getElementById('ln-principal').value = loan.principal ? fmtIN(loan.principal) : '';
+  document.getElementById('ln-principal').value = loan.principal || '';
   document.getElementById('ln-date').value     = loan.date || '';
   document.getElementById('ln-notes').value    = loan.notes || '';
   if (loan.loanType === 'handloan') {
     document.getElementById('ln-hl-rate').value     = loan.rate || '';
-    document.getElementById('ln-hl-int-paid').value = loan.interestPaid ? fmtIN(loan.interestPaid) : '';
+    document.getElementById('ln-hl-int-paid').value = loan.interestPaid || '';
   } else {
     document.getElementById('ln-rate').value     = loan.rate || '';
     document.getElementById('ln-ratetype').value = loan.rateType || 'pa';
-    document.getElementById('ln-emi').value      = loan.emi ? fmtIN(loan.emi) : '';
+    document.getElementById('ln-emi').value      = loan.emi || '';
     document.getElementById('ln-term').value     = loan.termMonths || '';
   }
   onLoanTypeChange();
@@ -7623,7 +7615,7 @@ function saveLoan() {
   var editId    = document.getElementById('ln-edit-id').value;
   var loanType  = document.getElementById('ln-type').value;
   var name      = document.getElementById('ln-name').value.trim();
-  var principal = Math.round(Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0);
+  var principal = Math.round(Number(document.getElementById('ln-principal').value) || 0);
   var date      = document.getElementById('ln-date').value;
   var notes     = document.getElementById('ln-notes').value.trim();
 
@@ -7653,13 +7645,13 @@ function saveLoan() {
   if (loanType === 'bank') {
     loan.rate      = Number(document.getElementById('ln-rate').value) || 0;
     loan.rateType  = document.getElementById('ln-ratetype').value;
-    loan.emi       = Math.round(Number(document.getElementById('ln-emi').value.replace(/,/g,'')) || 0);
+    loan.emi       = Math.round(Number(document.getElementById('ln-emi').value) || 0);
     loan.termMonths= Math.round(Number(document.getElementById('ln-term').value) || 0);
   } else {
     // handloan
     loan.rate         = Number(document.getElementById('ln-hl-rate').value) || 0;
     loan.rateType     = 'pa';
-    loan.interestPaid = Math.round(Number(document.getElementById('ln-hl-int-paid').value.replace(/,/g,'')) || 0);
+    loan.interestPaid = Math.round(Number(document.getElementById('ln-hl-int-paid').value) || 0);
     loan.emi          = 0;
     loan.termMonths   = 0;
   }
@@ -7933,7 +7925,7 @@ function renderLoanList() {
           +'<div class="ls-box"><div class="ls-lbl">Principal Paid</div><div class="ls-val sage">'+rup(paidPrin)+' <span style="font-size:10px;color:var(--rose)">('+shortAmt(paidPrin)+')</span></div></div>'
           +'<div class="ls-box"><div class="ls-lbl">Payments</div><div class="ls-val">'+pmts.length+'</div></div>'
         +'</div>'
-        +(loan.emi ? '<div style="background:rgba(58,232,200,0.08);border:1px solid rgba(58,232,200,0.3);border-radius:9px;padding:7px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">EMI / Month</span><span style="font-family:JetBrains Mono;font-size:14px;font-weight:700;color:var(--teal)">'+fmtIN(loan.emi)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(loan.emi)+')</span></span></div>' : '');
+        +(loan.emi ? '<div style="background:rgba(58,232,200,0.08);border:1px solid rgba(58,232,200,0.3);border-radius:9px;padding:7px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--tx2)">EMI / Month</span><span style="font-family:JetBrains Mono;font-size:14px;font-weight:700;color:var(--teal)">'+rup(loan.emi)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(loan.emi)+')</span></span></div>' : '');
 
     if (loan.notes) {
       html += '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">📝 '+escH(loan.notes)+'</div>';
@@ -7973,12 +7965,12 @@ function renderLoanList() {
       var toD = new Date(now);
 
       html += '<div style="font-size:12px;font-weight:700;color:var(--tx2);margin:8px 0 4px">📅 EMI Schedule ('+fromD.toISOString().slice(0,7)+' to '+toD.toISOString().slice(0,7)+'):</div>'
-        +'<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr 0.5fr;gap:3px;margin-bottom:3px;padding:0 2px">'
+        +'<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.6fr 0.4fr;gap:3px;margin-bottom:3px;padding:0 2px">'
           +'<span style="font-size:10px;color:var(--tx3)">Date</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Interest</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Principal</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Paid</span>'
-          +'<span style="font-size:10px;color:var(--tx3)">Delete Payment</span>'
+          +'<span></span>'
         +'</div>';
 
       var d = new Date(fromD);
@@ -8001,7 +7993,7 @@ function renderLoanList() {
           sch.interestPart = Math.min(sch.interestPart, sch.amount);
           sch.principalPart = Math.max(sch.amount - sch.interestPart, 0);
         }
-        html += '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr 0.5fr;gap:3px;align-items:center;margin-bottom:3px">'
+        html += '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr;gap:3px;align-items:center;margin-bottom:3px">'
           +'<input type="date" class="fi" value="'+sch.date+'" style="font-size:11px;margin:0;padding:3px 5px" '
             +'onchange="updateEmiEntry(\''+loan.id+'\',\''+dStr+'\',\'date\',this.value)">'
           +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(existingEmiPmt?Number(existingEmiPmt.interestAmount||0):(sch.interestPart||0))+'</div>'
@@ -8009,7 +8001,7 @@ function renderLoanList() {
           +'<input type="checkbox" '+(isPaid?'checked disabled':'')+' '
             +(isPaid?'':('onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '))
             +'style="width:18px;height:18px;'+(isPaid?'cursor:not-allowed;opacity:0.5':'cursor:pointer')+';accent-color:var(--teal)">'
-          +(isPaid?('<button onclick="deleteEmiPayment(\''+loan.id+'\',\''+dStr+'\')" style="background:none;border:none;color:var(--rose);font-size:14px;cursor:pointer;padding:0 4px;line-height:1" title="Delete payment">✕</button>'):'<span></span>')
+          +(isPaid?('<button onclick="deleteEmiPayment(\''+loan.id+'\',\''+dStr+'\')" style="background:none;border:none;color:var(--rose);font-size:13px;cursor:pointer;padding:0 4px;line-height:1" title="Remove payment">✕</button>'):'<span></span>')
         +'</div>';
         d.setMonth(d.getMonth()+1);
       }
@@ -8406,28 +8398,6 @@ function renderPL() {
     var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalPart||0); },0);
     return s + Math.max(Number(l.principal||0) - paid, 0);
   }, 0);
-  
-  // Calculate total interest accrued across all loans
-  var totalIntAccrued = 0;
-  loans.forEach(function(loan) {
-    if (loan.rate && loan.rateType) {
-      var loanStartDate = new Date(loan.date);
-      var today = new Date();
-      var daysElapsed = Math.floor((today - loanStartDate) / (1000 * 60 * 60 * 24));
-      var annualIntBase = Math.round(Number(loan.principal) * Number(loan.rate) / 100);
-      var accruedInt = 0;
-      if (loan.rateType === 'pa') {
-        accruedInt = Math.round(annualIntBase * daysElapsed / 365);
-      } else if (loan.rateType === 'pm') {
-        accruedInt = Math.round(annualIntBase * daysElapsed / 30);
-      } else if (loan.rateType === 'flat') {
-        accruedInt = Math.round(Number(loan.rate) * daysElapsed / 30);
-      } else if (loan.rateType === '0') {
-        accruedInt = 0;
-      }
-      totalIntAccrued += accruedInt;
-    }
-  });
 
   var html = '';
   // Overall accumulators
@@ -8485,7 +8455,7 @@ function renderPL() {
                     .reduce(function(s,e){ return s+Number(e.amount||0); },0);
 
     var costIncurred = landForCalc + projConstCost + projMiscOther + manualExp;
-    var grossProfit  = soldRevenue - (soldCOGS + manualExp);
+    var grossProfit  = soldRevenue - soldCOGS - manualExp;
     var gpColor      = grossProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
     var outstanding  = Math.max(landCostTotal - landPaid, 0);
     var roi          = (soldRevenue > 0 && soldCOGS > 0)
@@ -8538,38 +8508,21 @@ function renderPL() {
     var overallNet    = overallGross - totalInterestPaid;
     var ogColor       = overallGross >= 0 ? 'var(--sage)' : 'var(--rose)';
     var onColor       = overallNet   >= 0 ? 'var(--sage)' : 'var(--rose)';
-    
-    // New metrics
-    var pendingCollection = Math.max(allRevenue - allReceived, 0);
-    var intAccruedNotPaid = Math.max(totalIntAccrued - totalInterestPaid, 0);
-    var overallROI = (allCOGS > 0) ? ((overallGross / allCOGS) * 100).toFixed(1) : 0;
-    var cashFlow = allReceived - allCostIncurred;
-    var cfColor = cashFlow >= 0 ? 'var(--sage)' : 'var(--rose)';
-    
     elOverall.innerHTML = '<div style="background:linear-gradient(135deg,rgba(232,184,74,0.08),rgba(58,232,200,0.05));border:1px solid rgba(232,184,74,0.3);border-radius:13px;padding:14px;margin-bottom:4px">'
       +'<div style="font-size:13px;font-weight:700;color:var(--amb);margin-bottom:10px">📊 Company P&amp;L — All Projects</div>'
       +'<div class="fin-summary">'
         +'<div class="fsum-box"><div class="fsum-lbl">Total Borrowed</div><div class="fsum-val" style="color:var(--amb)">'+rup(totalBorrowed)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(totalBorrowed)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Outstanding Debt</div><div class="fsum-val" style="color:var(--rose)">'+rup(totalOutstanding)+' <span style="font-size:11px;font-weight:600;color:var(--amb)">('+shortAmt(totalOutstanding)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Interest Paid</div><div class="fsum-val" style="color:var(--sky)">'+rup(totalInterestPaid)+' <span style="font-size:11px;font-weight:600;color:var(--teal)">('+shortAmt(totalInterestPaid)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Interest Accrued</div><div class="fsum-val" style="color:var(--amb)">'+rup(totalIntAccrued)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(totalIntAccrued)+')</span></div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Total Cost Incurred</div><div class="fsum-val" style="color:var(--rose)">'+rup(allCostIncurred)+' <span style="font-size:11px;font-weight:600;color:var(--sage)">('+shortAmt(allCostIncurred)+')</span></div></div>'
       +'</div>'
       +(hasSales ? '<div class="fin-summary" style="margin-top:8px">'
         +'<div class="fsum-box"><div class="fsum-lbl">Revenue (Sold)</div><div class="fsum-val" style="color:var(--sage)">'+rup(allRevenue)+' <span style="font-size:11px;font-weight:600;color:var(--amb)">('+shortAmt(allRevenue)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Received So Far</div><div class="fsum-val" style="color:var(--teal)">'+rup(allReceived)+' <span style="font-size:11px;font-weight:600;color:var(--rose)">('+shortAmt(allReceived)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Pending Collection</div><div class="fsum-val" style="color:var(--amb)">'+rup(pendingCollection)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(pendingCollection)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Interest Unpaid</div><div class="fsum-val" style="color:var(--rose)">'+rup(intAccruedNotPaid)+' <span style="font-size:11px;font-weight:600;color:var(--teal)">('+shortAmt(intAccruedNotPaid)+')</span></div></div>'
-      +'</div>' : '')
-      +'<div class="fin-summary" style="margin-top:8px">'
-        +'<div class="fsum-box"><div class="fsum-lbl">Total Cost Incurred</div><div class="fsum-val" style="color:var(--rose)">'+rup(allCostIncurred)+' <span style="font-size:11px;font-weight:600;color:var(--sage)">('+shortAmt(allCostIncurred)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Gross Profit</div><div class="fsum-val" style="color:'+ogColor+'">'+(overallGross>=0?'+':'')+rup(overallGross)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(overallGross)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Overall ROI %</div><div class="fsum-val" style="color:var(--sage);font-weight:700">'+overallROI+'%</div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Cash Flow</div><div class="fsum-val" style="color:'+cfColor+';font-weight:700">'+(cashFlow>=0?'+':'')+rup(cashFlow)+' <span style="font-size:11px;color:var(--amb)">('+shortAmt(cashFlow)+')</span></div></div>'
-      +'</div>'
-      +'<div class="fin-summary" style="margin-top:8px;border-top:1px solid var(--bd);padding-top:8px">'
-        +'<div class="fsum-box" style="grid-column:1/-1"><div class="fsum-lbl" style="font-weight:700">Net Profit (After Interest)</div><div class="fsum-val" style="color:'+onColor+';font-size:18px;font-weight:700">'+(overallNet>=0?'+':'')+rup(overallNet)+' <span style="font-size:12px;font-weight:600;color:var(--amb)">('+shortAmt(overallNet)+')</span></div></div>'
-      +'</div>'
-      +'</div>';
+        +'<div class="fsum-box"><div class="fsum-lbl" style="font-weight:700">Net Profit</div><div class="fsum-val" style="color:'+onColor+';font-size:18px">'+(overallNet>=0?'+':'')+rup(overallNet)+' <span style="font-size:12px;font-weight:600;color:var(--amb)">('+shortAmt(overallNet)+')</span></div></div>'
+      +'</div>' : '<div style="padding:8px 0;font-size:12px;color:var(--tx3);text-align:center">Mark plots as Sold to see Revenue &amp; Profit</div>')
+    +'</div>';
   }
 }
 
