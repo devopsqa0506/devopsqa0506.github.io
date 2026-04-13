@@ -1435,7 +1435,7 @@ input[type=number] { -moz-appearance:textfield; }
       </div>
       <div>
         <label class="fl">Price per Cent (₹)</label>
-        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="calcLandTotal()" onblur="calcLandTotal()">
+        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcLandTotal()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcLandTotal()">
       </div>
     </div>
     <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 14px;margin-bottom:10px">
@@ -1719,7 +1719,7 @@ input[type=number] { -moz-appearance:textfield; }
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
         <div>
           <label class="fl">Amount (₹) *</label>
-          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" oninput="calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
+          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
           <div id="ln-amount-words" style="font-size:11px;color:var(--sage);margin-top:2px;text-align:right"></div>
         </div>
         <div><label class="fl">Date Borrowed *</label><input class="fi" id="ln-date" type="date"></div>
@@ -1740,7 +1740,7 @@ input[type=number] { -moz-appearance:textfield; }
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
-        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" oninput="calcEmiFromForm()" onblur="calcEmiFromForm()"></div>
+        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcEmiFromForm()"></div>
         <div><label class="fl">Term (months)</label><input class="fi fi-mono" id="ln-term" type="text" inputmode="numeric" placeholder="12" oninput="calcEmiFromForm()" onblur="calcEmiFromForm()"></div>
       </div>
     </div>
@@ -1759,7 +1759,7 @@ input[type=number] { -moz-appearance:textfield; }
           </div>
           <div>
             <label class="fl">Interest Paid (₹)</label>
-            <input class="fi fi-mono" id="ln-hl-int-paid" type="text" inputmode="numeric" placeholder="0" oninput="calcHandLoanInterest()" onblur="calcHandLoanInterest()">
+            <input class="fi fi-mono" id="ln-hl-int-paid" type="text" inputmode="numeric" placeholder="0" oninput="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcHandLoanInterest()" onblur="this.value=fmtIN(Math.round(Number(this.value.replace(/,/g,''))||0));calcHandLoanInterest()">
           </div>
         </div>
         <label class="fl" style="margin-top:6px">Interest Balance (₹)</label>
@@ -4761,7 +4761,7 @@ var _pendingLandPmts = []; // [{id,date,amount,notes}]
 
 function calcLandTotal() {
   var cents = Number(document.getElementById('p-cents').value) || 0;
-  var ppc   = Number(document.getElementById('p-price-per-cent').value) || 0;
+  var ppc   = Number(document.getElementById('p-price-per-cent').value.replace(/,/g,'')) || 0;
   var total = cents * ppc;
   document.getElementById('p-landtotal-display').textContent = '₹' + fmtIN(total);
   document.getElementById('p-landcost').value = total;
@@ -4892,7 +4892,7 @@ function openEditProject(projId) {
   document.getElementById('p-modal-title').textContent = '✏️ Edit Venture';
   document.getElementById('p-name').value = proj.name || '';
   document.getElementById('p-cents').value = proj.totalCents || '';
-  document.getElementById('p-price-per-cent').value = proj.pricePerCent || '';
+  document.getElementById('p-price-per-cent').value = proj.pricePerCent ? fmtIN(proj.pricePerCent) : '';
   calcLandTotal();
   document.getElementById('p-status').value = proj.status || 'active';
   document.getElementById('p-date').value = proj.date || '';
@@ -5094,13 +5094,13 @@ function openPlotByIndex(el) {
   +'</div>';
 
   // Editable Plot No + Size + Land Cost Per Cent
-  body += '<div style="display:grid;grid-template-columns:80px 110px 130px;gap:8px;margin-bottom:10px">'
+  body += '<div style="display:grid;grid-template-columns:90px 120px 140px;gap:10px;margin-bottom:10px">'
     +'<div><label class="fl" style="font-size:11px">Plot No</label>'
       +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center;font-size:12px"></div>'
     +'<div><label class="fl" style="font-size:11px">Size (Cents)</label>'
       +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')" style="font-size:12px"></div>'
     +'<div><label class="fl" style="font-size:11px">Cost/Cent</label>'
-      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:12px">'+fmtIN(Math.round(landCostPerCent))+'/c</div></div>'
+      +'<div class="fi" style="opacity:0.7;display:flex;align-items:center;justify-content:center;font-family:JetBrains Mono;color:var(--sky);font-size:12px">'+fmtIN(Math.round(landCostPerCent))+'</div></div>'
   +'</div>';
 
   // Type
@@ -7418,7 +7418,7 @@ if (!state.emiSchedule)  state.emiSchedule  = [];
 
 // ── EMI Auto-Calc ──
 function calcEmiFromForm() {
-  var principal = Number(document.getElementById('ln-principal').value)||0;
+  var principal = Number(document.getElementById('ln-principal').value.replace(/,/g,''))||0;
   var rate      = Number(document.getElementById('ln-rate').value)||0;
   var rateType  = document.getElementById('ln-ratetype').value;
   var term      = Number(document.getElementById('ln-term').value)||0;
@@ -7445,7 +7445,7 @@ function calcEmiFromForm() {
 }
 
 function updateLoanAmountWords() {
-  var amt = Number(document.getElementById('ln-principal').value) || 0;
+  var amt = Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0;
   var wordsEl = document.getElementById('ln-amount-words');
   if (wordsEl) wordsEl.textContent = amt > 0 ? amtWords(amt) : '';
 }
@@ -7568,9 +7568,9 @@ function onLoanTypeChange() {
 
 // ── HandLoan interest auto-calc ──
 function calcHandLoanInterest() {
-  var principal = Number(document.getElementById('ln-principal').value) || 0;
+  var principal = Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0;
   var rate      = Number(document.getElementById('ln-hl-rate').value) || 0;
-  var intPaid   = Number(document.getElementById('ln-hl-int-paid').value) || 0;
+  var intPaid   = Number(document.getElementById('ln-hl-int-paid').value.replace(/,/g,'')) || 0;
   var loanDate  = document.getElementById('ln-date').value;
   var track     = document.getElementById('ln-hl-track');
   if (!track) return;
@@ -7585,8 +7585,8 @@ function calcHandLoanInterest() {
     var annualInt = Math.round(principal * rate / 100);
     var proratedInt = Math.round(annualInt * daysElapsed / 365);
     var balance  = Math.max(proratedInt - intPaid, 0);
-    document.getElementById('ln-hl-total-int').textContent   = rup(proratedInt) + ' (till today)';
-    document.getElementById('ln-hl-int-balance').textContent = rup(balance);
+    document.getElementById('ln-hl-total-int').textContent   = fmtIN(proratedInt) + ' (till today)';
+    document.getElementById('ln-hl-int-balance').textContent = fmtIN(balance);
   }
 }
 
@@ -7598,16 +7598,16 @@ function openEditLoan(loanId) {
   document.getElementById('ln-edit-id').value  = loan.id;
   document.getElementById('ln-type').value     = loan.loanType || 'bank';
   document.getElementById('ln-name').value     = loan.name || '';
-  document.getElementById('ln-principal').value = loan.principal || '';
+  document.getElementById('ln-principal').value = loan.principal ? fmtIN(loan.principal) : '';
   document.getElementById('ln-date').value     = loan.date || '';
   document.getElementById('ln-notes').value    = loan.notes || '';
   if (loan.loanType === 'handloan') {
     document.getElementById('ln-hl-rate').value     = loan.rate || '';
-    document.getElementById('ln-hl-int-paid').value = loan.interestPaid || '';
+    document.getElementById('ln-hl-int-paid').value = loan.interestPaid ? fmtIN(loan.interestPaid) : '';
   } else {
     document.getElementById('ln-rate').value     = loan.rate || '';
     document.getElementById('ln-ratetype').value = loan.rateType || 'pa';
-    document.getElementById('ln-emi').value      = loan.emi || '';
+    document.getElementById('ln-emi').value      = loan.emi ? fmtIN(loan.emi) : '';
     document.getElementById('ln-term').value     = loan.termMonths || '';
   }
   onLoanTypeChange();
@@ -7619,7 +7619,7 @@ function saveLoan() {
   var editId    = document.getElementById('ln-edit-id').value;
   var loanType  = document.getElementById('ln-type').value;
   var name      = document.getElementById('ln-name').value.trim();
-  var principal = Math.round(Number(document.getElementById('ln-principal').value) || 0);
+  var principal = Math.round(Number(document.getElementById('ln-principal').value.replace(/,/g,'')) || 0);
   var date      = document.getElementById('ln-date').value;
   var notes     = document.getElementById('ln-notes').value.trim();
 
@@ -7649,13 +7649,13 @@ function saveLoan() {
   if (loanType === 'bank') {
     loan.rate      = Number(document.getElementById('ln-rate').value) || 0;
     loan.rateType  = document.getElementById('ln-ratetype').value;
-    loan.emi       = Math.round(Number(document.getElementById('ln-emi').value) || 0);
+    loan.emi       = Math.round(Number(document.getElementById('ln-emi').value.replace(/,/g,'')) || 0);
     loan.termMonths= Math.round(Number(document.getElementById('ln-term').value) || 0);
   } else {
     // handloan
     loan.rate         = Number(document.getElementById('ln-hl-rate').value) || 0;
     loan.rateType     = 'pa';
-    loan.interestPaid = Math.round(Number(document.getElementById('ln-hl-int-paid').value) || 0);
+    loan.interestPaid = Math.round(Number(document.getElementById('ln-hl-int-paid').value.replace(/,/g,'')) || 0);
     loan.emi          = 0;
     loan.termMonths   = 0;
   }
