@@ -5605,7 +5605,7 @@ function recalcHouseTotals(pi, pli) {
 
 function updatePlotField(el, field, type) {
   var pi = Number(el.dataset.pi), pli = Number(el.dataset.pli);
-  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(el.value)||0) : el.value;
+  state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(String(el.value).replace(/,/g,''))||0) : el.value;
   if (field === 'sizeInCents') {
     var _proj = state.projects[pi];
     var _cents = Number(state.projects[pi].plots[pli].sizeInCents||0);
