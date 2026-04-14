@@ -2756,12 +2756,19 @@ function mergeSheetData(sheetData) {
     o.amount=Math.round(Number(o.amount)||0); return o;
   }).filter(function(o){ return o.id; });
 
-  // ── ProjectExpenses — full replace, sheet is source of truth ──
+  // ── ProjectExpenses — merge by ID (prevents sync overwriting pending no-cors appends) ──
   var peData = sheetData.ProjectExpenses || [];
   var peHdrs = peData[0] || []; var peRows = peData.slice(1);
-  state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
-    o.amount=Math.round(Number(o.amount)||0); return o;
-  }).filter(function(o){ return o.id; });
+  if (!state.projExpenses) state.projExpenses = [];
+  var localPeIds = new Set(state.projExpenses.map(function(e){ return e.id; }));
+  peRows.forEach(function(r){
+    var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
+    o.amount=Math.round(Number(o.amount)||0);
+    if (o.id && !localPeIds.has(o.id)) {
+      state.projExpenses.push(o);
+      localPeIds.add(o.id);
+    }
+  });
   
   // ── PlotLandPayments — restore plotLandCost/paidToDate/adjustmentHistory into plots ──
   var plpData = sheetData.PlotLandPayments || [];
@@ -8614,6 +8621,8 @@ function saveProjExpense() {
   };
 
   if (!state.projExpenses) state.projExpenses=[];
+  var alreadyExists = state.projExpenses.some(function(e){ return e.id===exp.id; });
+  if (alreadyExists) { toast('Already saved','info'); return; }
   state.projExpenses.push(exp);
   saveData();
   pushToSheet('ProjectExpenses',
