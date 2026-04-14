@@ -5373,11 +5373,14 @@ function saveAdjustLand(pi, pli) {
   toast('Land payment updated ✓','ok');
 }
 
+// Debounce map — prevents duplicate delete+insert when syncProjectPlots called rapidly
+var _syncPlotsTimers = {};
+
 function syncProjectPlots(projId) {
   var proj = (state.projects||[]).find(function(p){ return p.id===projId; });
   if (!proj || !cfg.scriptUrl || !cfg.sheetId) return;
 
-  // Projects sheet — action in URL param
+  // Projects sheet updateRow is idempotent — no debounce needed
   fetch(cfg.scriptUrl+'?action=updateRow', {
     method:'POST', mode:'no-cors',
     body:JSON.stringify({
@@ -5388,41 +5391,57 @@ function syncProjectPlots(projId) {
     })
   }).catch(function(){});
 
-  // LandPayments — delete then reinsert after delay
-  deleteFromSheet('LandPayments', 'projId', projId);
-  setTimeout(function() {
-    (state.landPayments||[]).filter(function(p){ return p.projId===projId; }).forEach(function(pmt) {
-      pushToSheet('LandPayments', ['id','projId','date','amount','notes'],
-        [pmt.id, pmt.projId, pmt.date, pmt.amount, pmt.notes||'']);
-    });
-  }, 2000);
+  // Debounce all delete+reinsert operations — collapses rapid calls into one
+  if (_syncPlotsTimers[projId]) clearTimeout(_syncPlotsTimers[projId]);
+  _syncPlotsTimers[projId] = setTimeout(function() {
+    delete _syncPlotsTimers[projId];
 
-  // ProjectExpenses — delete then batchAppend after delay (even 0 rows = creates sheet+headers)
-  deleteFromSheet('ProjectExpenses', 'projId', projId);
-  setTimeout(function() {
-    var expRows = [];
-    (proj.plots||[]).forEach(function(plt) {
-      (plt.constructionExpenses||[]).forEach(function(exp) {
-        expRows.push([exp.id, projId, plt.id, 'construction', 'Construction', exp.desc||'', exp.amount||0, exp.date||'']);
+    // LandPayments — delete then reinsert
+    deleteFromSheet('LandPayments', 'projId', projId);
+    setTimeout(function() {
+      (state.landPayments||[]).filter(function(p){ return p.projId===projId; }).forEach(function(pmt) {
+        pushToSheet('LandPayments', ['id','projId','date','amount','notes'],
+          [pmt.id, pmt.projId, pmt.date, pmt.amount, pmt.notes||'']);
       });
-      (plt.miscExpenses||[]).forEach(function(exp) {
-        expRows.push([exp.id, projId, plt.id, 'misc', exp.type||'Misc', '', exp.amount||0, exp.date||'']);
-      });
-      (plt.otherExpenses||[]).forEach(function(exp) {
-        expRows.push([exp.id, projId, plt.id, 'other', 'Other', exp.desc||'', exp.amount||0, exp.date||'']);
-      });
-    });
-    fetch(cfg.scriptUrl+'?action=batchAppend', {
-      method:'POST', mode:'no-cors',
-      body:JSON.stringify({
-        sheetId:cfg.sheetId, sheetName:'ProjectExpenses',
-        headers:['id','projId','plotId','type','category','desc','amount','date'],
-        rows:expRows
-      })
-    }).catch(function(){});
-  }, 2000);
+    }, 1500);
 
-  syncPlotLandPayments(projId);
+    // ProjectExpenses — delete then batchAppend ALL expenses for this project:
+    // 1) plot-level: constructionExpenses / miscExpenses / otherExpenses (inside plots)
+    // 2) project-level overhead: state.projExpenses entries added via Add Expense modal
+    deleteFromSheet('ProjectExpenses', 'projId', projId);
+    setTimeout(function() {
+      // Re-read proj at execute time — state may have changed during debounce window
+      var _proj = (state.projects||[]).find(function(p){ return p.id===projId; });
+      if (!_proj) return;
+      var expRows = [];
+      // Plot-level expenses
+      (_proj.plots||[]).forEach(function(plt) {
+        (plt.constructionExpenses||[]).forEach(function(exp) {
+          expRows.push([exp.id, projId, plt.id, 'construction', 'Construction', exp.desc||'', exp.amount||0, exp.date||'']);
+        });
+        (plt.miscExpenses||[]).forEach(function(exp) {
+          expRows.push([exp.id, projId, plt.id, 'misc', exp.type||'Misc', '', exp.amount||0, exp.date||'']);
+        });
+        (plt.otherExpenses||[]).forEach(function(exp) {
+          expRows.push([exp.id, projId, plt.id, 'other', 'Other', exp.desc||'', exp.amount||0, exp.date||'']);
+        });
+      });
+      // Project-level overhead expenses (Add Expense modal → state.projExpenses)
+      (state.projExpenses||[]).filter(function(e){ return e.projId===projId; }).forEach(function(exp) {
+        expRows.push([exp.id, projId, '', 'overhead', exp.category||'Overhead', exp.desc||'', exp.amount||0, exp.date||'']);
+      });
+      fetch(cfg.scriptUrl+'?action=batchAppend', {
+        method:'POST', mode:'no-cors',
+        body:JSON.stringify({
+          sheetId:cfg.sheetId, sheetName:'ProjectExpenses',
+          headers:['id','projId','plotId','type','category','desc','amount','date'],
+          rows:expRows
+        })
+      }).catch(function(){});
+    }, 1500);
+
+    syncPlotLandPayments(projId);
+  }, 600); // 600ms debounce — collapses consecutive calls
 }
 
 function syncPlotLandPayments(projId) {
@@ -8625,12 +8644,10 @@ function saveProjExpense() {
   if (alreadyExists) { toast('Already saved','info'); return; }
   state.projExpenses.push(exp);
   saveData();
-  pushToSheet('ProjectExpenses',
-    ['id','projId','date','amount','category','desc'],
-    [exp.id, exp.projId, exp.date, exp.amount, exp.category, exp.desc]
-  );
+  // Route through syncProjectPlots so overhead expenses survive future plot-level syncs
+  // (direct pushToSheet gets wiped when syncProjectPlots fires deleteFromSheet on same projId)
+  syncProjectPlots(projId);
   closeModal('add-proj-expense');
-  // clear fields
   document.getElementById('pexp-amount').value='';
   document.getElementById('pexp-desc').value='';
   toast('Expense saved ✓','ok');
