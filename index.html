@@ -8319,7 +8319,7 @@ function openAddLandPayment(projId) {
 function saveLandPayment() {
   var projId = document.getElementById('lp-proj-id').value;
   var date   = document.getElementById('lp-date').value;
-  var amount = Math.round(Number(document.getElementById('lp-amount').value)||0);
+  var amount = parseVal(document.getElementById('lp-amount').value);
   var notes  = document.getElementById('lp-notes').value.trim();
   if (!date)   { toast('Date select చేయండి','err'); return; }
   if (!amount) { toast('Amount enter చేయండి','err'); return; }
@@ -8333,9 +8333,11 @@ function saveLandPayment() {
   );
   closeModal('add-land-payment');
   toast('Land payment saved ✓','ok');
+  syncProjectPlots(projId);
   updateAdvancesReceivedTotal();
   renderProjExp();
   renderPL();
+  renderProjects();
 }
 
 // ── Delete Land Payment ──
