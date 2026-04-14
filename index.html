@@ -1435,7 +1435,7 @@ input[type=number] { -moz-appearance:textfield; }
       </div>
       <div>
         <label class="fl">Price per Cent (₹)</label>
-        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="calcLandTotal()" onblur="calcLandTotal()">
+        <input class="fi fi-mono" id="p-price-per-cent" type="text" inputmode="numeric" placeholder="45000" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;try{this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length));}catch(e){}calcLandTotal()" onblur="this.value=fmtVal(parseVal(this.value));calcLandTotal()">
       </div>
     </div>
     <div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 14px;margin-bottom:10px">
@@ -1719,7 +1719,7 @@ input[type=number] { -moz-appearance:textfield; }
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
         <div>
           <label class="fl">Amount (₹) *</label>
-          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" onfocus="this.value=this.value.replace(/,/g,'')" oninput="calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="this.value=fmtVal(parseVal(this.value));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
+          <input class="fi fi-mono" id="ln-principal" type="text" inputmode="numeric" placeholder="200000" onfocus="this.value=this.value.replace(/,/g,'')" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;try{this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length));}catch(e){}calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()" onblur="this.value=fmtVal(parseVal(this.value));calcEmiFromForm();calcHandLoanInterest();updateLoanAmountWords()">
           <div id="ln-amount-words" style="font-size:11px;color:var(--sage);margin-top:2px;text-align:right"></div>
         </div>
         <div><label class="fl">Date Borrowed *</label><input class="fi" id="ln-date" type="date"></div>
@@ -1740,7 +1740,7 @@ input[type=number] { -moz-appearance:textfield; }
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
-        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" onfocus="this.value=this.value.replace(/,/g,'')" oninput="calcEmiFromForm()" onblur="this.value=fmtVal(parseVal(this.value));calcEmiFromForm()"></div>
+        <div><label class="fl">EMI / Month (₹)</label><input class="fi fi-mono" id="ln-emi" type="text" inputmode="numeric" placeholder="Auto-calc" onfocus="this.value=this.value.replace(/,/g,'')" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;try{this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length));}catch(e){}calcEmiFromForm()" onblur="this.value=fmtVal(parseVal(this.value));calcEmiFromForm()"></div>
         <div><label class="fl">Term (months)</label><input class="fi fi-mono" id="ln-term" type="text" inputmode="numeric" placeholder="12" oninput="calcEmiFromForm()" onblur="calcEmiFromForm()"></div>
       </div>
     </div>
@@ -1826,7 +1826,7 @@ input[type=number] { -moz-appearance:textfield; }
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div><label class="fl">Date *</label><input class="fi" id="pexp-date" type="date"></div>
-      <div><label class="fl">Amount (₹) *</label><input class="fi fi-mono" id="pexp-amount" type="text" inputmode="numeric" placeholder="50000"></div>
+      <div><label class="fl">Amount (₹) *</label><input class="fi fi-mono" id="pexp-amount" type="text" inputmode="numeric" placeholder="50000" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length))" onblur="this.value=fmtVal(parseVal(this.value))"></div>
     </div>
 
     <label class="fl">Category *</label>
@@ -1859,7 +1859,7 @@ input[type=number] { -moz-appearance:textfield; }
     <select class="fi" id="inc-project"></select>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div><label class="fl">Date *</label><input class="fi" id="inc-date" type="date"></div>
-      <div><label class="fl">Amount (₹) *</label><input class="fi fi-mono" id="inc-amount" type="text" inputmode="numeric" placeholder="4500000"></div>
+      <div><label class="fl">Amount (₹) *</label><input class="fi fi-mono" id="inc-amount" type="text" inputmode="numeric" placeholder="4500000" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length))" onblur="this.value=fmtVal(parseVal(this.value))"></div>
     </div>
     <label class="fl">Type</label>
     <select class="fi" id="inc-type">
@@ -1887,7 +1887,7 @@ input[type=number] { -moz-appearance:textfield; }
     <input type="hidden" id="lp-proj-id">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div><label class="fl">Date *</label><input class="fi" id="lp-date" type="date"></div>
-      <div><label class="fl">Amount Paid (₹) *</label><input class="fi fi-mono" id="lp-amount" type="text" inputmode="numeric" placeholder="500000"></div>
+      <div><label class="fl">Amount Paid (₹) *</label><input class="fi fi-mono" id="lp-amount" type="text" inputmode="numeric" placeholder="500000" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,''),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length))" onblur="this.value=fmtVal(parseVal(this.value))"></div>
     </div>
     <label class="fl">Notes (optional)</label>
     <input class="fi" id="lp-notes" placeholder="ఉదా: 1st installment, Registration day payment">
@@ -4796,7 +4796,7 @@ var _pendingLandPmts = []; // [{id,date,amount,notes}]
 
 function calcLandTotal() {
   var cents = Number(document.getElementById('p-cents').value) || 0;
-  var ppc   = Number(document.getElementById('p-price-per-cent').value) || 0;
+  var ppc   = parseVal(document.getElementById('p-price-per-cent').value) || 0;
   var total = cents * ppc;
   document.getElementById('p-landtotal-display').textContent = '₹' + fmtIN(total);
   document.getElementById('p-landcost').value = total;
@@ -4817,7 +4817,7 @@ function renderLandPaymentRows() {
   _pendingLandPmts.forEach(function(row, i) {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px" data-lp-idx="'+i+'">'
       +'<input class="fi fi-mono" type="date" value="'+row.date+'" oninput="_pendingLandPmts['+i+'].date=this.value;updateLandPaidTotal()" style="flex:0 0 130px;margin-bottom:0;font-size:13px">'
-      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount||'')+'" oninput="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" onblur="_pendingLandPmts['+i+'].amount=Math.round(Number(this.value)||0);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
+      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Amount ₹" value="'+(row.amount?fmtIN(row.amount):'')+'" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v))this.value=n;else this.value=v;try{this.setSelectionRange(c+(this.value.length-v.length),c+(this.value.length-v.length));}catch(e){} _pendingLandPmts['+i+'].amount=parseVal(this.value);updateLandPaidTotal()" onblur="this.value=fmtVal(parseVal(this.value));_pendingLandPmts['+i+'].amount=parseVal(this.value);updateLandPaidTotal()" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<input class="fi" type="text" placeholder="Note" value="'+(row.notes||'')+'" oninput="_pendingLandPmts['+i+'].notes=this.value" style="flex:1;margin-bottom:0;font-size:13px">'
       +'<button type="button" onclick="_pendingLandPmts.splice('+i+',1);renderLandPaymentRows();updateLandPaidTotal()" style="background:none;border:none;color:var(--rose);font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0">×</button>'
     +'</div>';
@@ -4851,7 +4851,7 @@ function saveProject() {
     projType: 'venture',
     landCost: Math.round(Number(document.getElementById('p-landcost').value) || 0),
     totalCents: Math.round(Number(document.getElementById('p-cents').value) || 0),
-    pricePerCent: Math.round(Number(document.getElementById('p-price-per-cent').value) || 0),
+    pricePerCent: parseVal(document.getElementById('p-price-per-cent').value),
     status: document.getElementById('p-status').value,
     date: document.getElementById('p-date').value || today(),
     dealEndDate: document.getElementById('p-deal-end-date').value || '',
