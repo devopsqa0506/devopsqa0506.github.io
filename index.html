@@ -2562,10 +2562,10 @@ function setSyncStatus(s) {
   function pushToSheet(sheetName, headers, row) {
   var url = cfg.scriptUrl || SCRIPT_URL;
   var sid = cfg.sheetId || '';
-  if (!url) { console.warn('SiteBook: no scriptUrl'); return Promise.resolve(); }
-  if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return Promise.resolve(); }
+  if (!url) { console.warn('SiteBook: no scriptUrl'); return; }
+  if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return; }
   // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  return fetch(url + '?action=append', {
+  fetch(url + '?action=append', {
     method: 'POST',
     mode: 'no-cors',
     body: JSON.stringify({sheetId:sid, sheetName:sheetName, headers:headers, row:row})
@@ -2574,9 +2574,9 @@ function setSyncStatus(s) {
 
 // ── deleteFromSheet via GET (avoids 302 redirect on POST) ──
 function deleteFromSheet(sheetName, matchCol, matchVal) {
-  if (!cfg.scriptUrl || !cfg.sheetId) return Promise.resolve();
+  if (!cfg.scriptUrl || !cfg.sheetId) return;
   // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  return fetch(cfg.scriptUrl + '?action=deleteRow', {
+  fetch(cfg.scriptUrl + '?action=deleteRow', {
     method: 'POST',
     mode: 'no-cors',
     body: JSON.stringify({sheetId:cfg.sheetId, sheetName:sheetName, matchCol:matchCol, matchVal:matchVal})
@@ -2660,9 +2660,6 @@ function mergeSheetData(sheetData) {
       // Parse plotsJson from sheet back into plots array
       if (obj.plotsJson) {
         try { obj.plots = JSON.parse(obj.plotsJson); } catch(e) { obj.plots = []; }
-      } else {
-        obj.plots = obj.plots || [];
-      }
         // Round all amounts in parsed plots
         (obj.plots||[]).forEach(function(plt) {
           ['salePrice','advanceReceived','constructionCost'].forEach(function(k) {
@@ -2673,6 +2670,7 @@ function mergeSheetData(sheetData) {
           (plt.otherExpenses||[]).forEach(function(e){ e.amount = Math.round(Number(e.amount)||0); });
           (plt.partialPayments||[]).forEach(function(pp){ pp.amount = Math.round(Number(pp.amount)||0); });
         });
+      }
       if (!obj.houses) obj.houses = [];
       if (!obj.agreements) obj.agreements = [];
       // Update existing project or add new one — sheet wins
@@ -5382,7 +5380,7 @@ function syncProjectIncome(projId) {
   Promise.resolve(deleteFromSheet('ProjectIncome', 'projId', projId)).then(function() {
     (proj.plots||[]).forEach(function(plt) {
       if (plt.advanceReceived && plt.advanceReceived > 0) {
-        var advId = 'adv_' + plt.id;
+        var advId = 'adv_' + plt.id + '_' + Date.now();
         pushToSheet('ProjectIncome',
           ['id','projId','projectName','plotId','plotNo','incomeType','amount','date','buyerName','notes'],
           [advId, projId, proj.name, plt.id, plt.plotNo||'', 'advance', plt.advanceReceived, plt.date||today(), plt.buyer||'', 'Advance received']
