@@ -5205,7 +5205,7 @@ function openPlotByIndex(el) {
         : '<input type="text" class="fi" value="'+escH(ce.desc||'')+'" placeholder="Description" '
             +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'desc\',\'text\',this)" style="font-size:12px">')
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(ce.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value.replace(/,/g,\'\'),\'ce-w-'+ceIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'ce-w-'+ceIdx+'\')" style="font-size:12px">'
         +'<div id="ce-w-'+ceIdx+'" style="font-size:11px;font-weight:600;color:var(--sky);margin-top:2px;min-height:14px">'+(ce.amount?amtWords(ce.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(ce.date||'')+'" '
         +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5243,7 +5243,7 @@ function openPlotByIndex(el) {
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(me.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value.replace(/,/g,\'\'),\'me-w-'+meIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'me-w-'+meIdx+'\')" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5260,7 +5260,7 @@ function openPlotByIndex(el) {
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(oe.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="showAmtLabel(this.value.replace(/,/g,\'\'),\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5292,12 +5292,12 @@ function openPlotByIndex(el) {
   // Sale Price, Buyer, Payments — only when SOLD
   if (isSold) {
     body += '<label class="fl" style="margin-top:9px">Sale Price (₹)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-sale-price" value="'+(plt.salePrice||'')+'" placeholder="Actual sale price" '
-      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'salePrice\',\'num\')" onblur="updatePlotField(this,\'salePrice\',\'num\')" oninput="showAmtLabel(this.value,\'sp-words\'); updatePlotProfitInstant('+pi+','+pli+',this.value)">'
+      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-sale-price" value="'+(plt.salePrice?fmtIN(plt.salePrice):'')+'" placeholder="Actual sale price" '
+      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'salePrice\',\'num\')" onblur="this.value=fmtVal(parseVal(this.value));updatePlotField(this,\'salePrice\',\'num\')" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'sp-words\'); updatePlotProfitInstant('+pi+','+pli+',this.value.replace(/,/g,\'\'))">'
       +'<div id="sp-words" style="font-size:12px;font-weight:600;color:var(--amb);margin-top:3px;min-height:16px">'+(plt.salePrice?amtWords(plt.salePrice):'')+'</div>'
       +'<label class="fl" style="margin-top:9px">Advance Received (₹)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-adv-rcvd" value="'+(plt.advanceReceived||'')+'" placeholder="Token / advance amount" '
-      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'advanceReceived\',\'num\')" onblur="updatePlotField(this,\'advanceReceived\',\'num\')" oninput="recalcPaymentTotal('+pi+','+pli+',this.value); showAmtLabel(this.value,\'adv-words\')">'
+      +'<input type="text" inputmode="numeric" class="fi fi-mono" id="hm-adv-rcvd" value="'+(plt.advanceReceived?fmtIN(plt.advanceReceived):'')+'" placeholder="Token / advance amount" '
+      +'data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'advanceReceived\',\'num\')" onblur="this.value=fmtVal(parseVal(this.value));updatePlotField(this,\'advanceReceived\',\'num\')" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}recalcPaymentTotal('+pi+','+pli+',this.value.replace(/,/g,\'\')); showAmtLabel(this.value.replace(/,/g,\'\'),\'adv-words\')">'
       +'<div id="adv-words" style="font-size:12px;font-weight:600;color:var(--teal);margin-top:3px;min-height:16px">'+(plt.advanceReceived?amtWords(plt.advanceReceived):'')+'</div>'
       +'<label class="fl" style="margin-top:9px">Buyer Name</label>'
       +'<input type="text" class="fi" value="'+escH(plt.buyer||'')+'" placeholder="Buyer పేరు" '
@@ -5313,9 +5313,9 @@ function openPlotByIndex(el) {
           +'<input type="text" class="fi" value="'+escH(pp.desc||'')+'" placeholder="Description" '
             +'data-pi="'+pi+'" data-pli="'+pli+'" data-ppidx="'+ppIdx+'" '
             +'onchange="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'desc\',\'text\')" style="font-size:12px">'
-          +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(pp.amount||'')+'" placeholder="Amount" '
+          +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+(pp.amount?fmtIN(pp.amount):'')+'" placeholder="Amount" '
             +'data-pi="'+pi+'" data-pli="'+pli+'" data-ppidx="'+ppIdx+'" '
-            +'onchange="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" onblur="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" oninput="recalcPaymentTotal('+pi+','+pli+',null); showAmtLabel(this.value,\'pp-w-'+ppIdx+'\')" style="font-size:12px">'
+            +'onchange="updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" onblur="this.value=fmtVal(parseVal(this.value));updatePartialPayment(this,'+pi+','+pli+','+ppIdx+',\'amount\',\'num\')" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}recalcPaymentTotal('+pi+','+pli+',null); showAmtLabel(this.value.replace(/,/g,\'\'),\'pp-w-'+ppIdx+'\')" style="font-size:12px">'
             +'<div id="pp-w-'+ppIdx+'" style="font-size:11px;font-weight:600;color:var(--sage);margin-top:2px;min-height:14px">'+(pp.amount?amtWords(pp.amount):'')+'</div></div>'
           +'<input type="date" class="fi" value="'+(pp.date||'')+'" '
             +'data-pi="'+pi+'" data-pli="'+pli+'" data-ppidx="'+ppIdx+'" '
@@ -5972,11 +5972,29 @@ function renderExpenditureScreen() {
           ? (plt.status==='sold' ? '🏡' : plt.status==='building' ? '🏗️' : '🧱')
           : (plt.status==='sold' ? '🎉' : '🌿');
         var statusLabel = plt.status==='sold' ? 'Sold' : plt.status==='building' ? 'Building' : 'Planned';
+
+        // Profit calc for sold plots on card
+        var cardProfitHtml = '';
+        if (plt.status === 'sold') {
+          var _cr = proj.totalCents > 0 ? (Number(proj.landCost||0) / proj.totalCents) : 0;
+          var _lc = _cr * Number(plt.sizeInCents||0);
+          var _ce = (plt.constructionExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
+          var _me = (plt.miscExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
+          var _oe = (plt.otherExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
+          var _cb = plt.type==='house' ? _lc+_ce+_me+_oe : _lc+_me+_oe;
+          var _sp = Number(plt.salePrice||0);
+          var _prf = _sp - _cb;
+          var _pc = _prf >= 0 ? 'var(--sage)' : 'var(--rose)';
+          var _ps = _prf >= 0 ? '+' : '';
+          cardProfitHtml = '<div style="font-size:9px;font-weight:700;color:'+_pc+';margin-top:2px;font-family:JetBrains Mono">'+_ps+shortAmt(_prf)+'</div>';
+        }
+
         html += '<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px;cursor:pointer;text-align:center;transition:all 0.2s" onclick="openPlotExpenditure('+pidx+','+pli+')">'
           + '<div style="font-size:20px;margin-bottom:4px">'+statusIcon+'</div>'
           + '<div style="font-weight:600;font-size:12px;margin-bottom:2px">Plot '+escH(plt.plotNo||String(pli+1))+'</div>'
-          + '<div style="font-size:10px;color:var(--tx3);margin-bottom:4px">'+(plt.sizeInCents||0)+' c</div>'
+          + '<div style="font-size:10px;color:var(--teal);margin-bottom:4px;font-family:JetBrains Mono">'+(plt.sizeInCents||0)+' c</div>'
           + '<div style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(90,175,232,0.12);color:'+statusColor+';display:inline-block">'+statusLabel+'</div>'
+          + cardProfitHtml
         + '</div>';
       });
       html += '</div>';
