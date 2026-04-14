@@ -4868,14 +4868,16 @@ function saveProject() {
 
   // Recalc plotLandCost + paidToDate for all plots based on final landCost/totalCents
   var _centRate = proj.totalCents > 0 ? (proj.landCost / proj.totalCents) : 0;
+  var _totalLandPaid = (_pendingLandPmts||[]).reduce(function(s,r){ return s+Math.round(Number(r.amount||0)); },0);
+  var _paidPerCent = proj.totalCents > 0 ? (_totalLandPaid / proj.totalCents) : 0;
   proj.plots.forEach(function(plt) {
     var _lc = Math.round(_centRate * Number(plt.sizeInCents||0));
     plt.plotLandCost = _lc;
     var _ext = existingPlots.find(function(p){ return p.id===plt.id; });
     if (!_ext || !_ext.adjustmentHistory || _ext.adjustmentHistory.length === 0) {
-      plt.paidToDate = _lc;
+      plt.paidToDate = Math.round(_paidPerCent * Number(plt.sizeInCents||0));
     } else {
-      plt.paidToDate = _ext.paidToDate || _lc;
+      plt.paidToDate = _ext.paidToDate || Math.round(_paidPerCent * Number(plt.sizeInCents||0));
       plt.adjustmentHistory = _ext.adjustmentHistory;
     }
     if (!plt.adjustmentHistory) plt.adjustmentHistory = [];
@@ -5541,8 +5543,10 @@ function updatePlotField(el, field, type) {
     var _cents = Number(state.projects[pi].plots[pli].sizeInCents||0);
     var _rate = (_proj.totalCents > 0) ? (Number(_proj.landCost||0) / _proj.totalCents) : 0;
     var _lc = Math.round(_rate * _cents);
+    var _totalPaid = (state.landPayments||[]).filter(function(p){ return p.projId===_proj.id; }).reduce(function(s,p){ return s+Number(p.amount||0); },0);
+    var _paidPerCent = _proj.totalCents > 0 ? (_totalPaid / _proj.totalCents) : 0;
     state.projects[pi].plots[pli].plotLandCost = _lc;
-    state.projects[pi].plots[pli].paidToDate = _lc;
+    state.projects[pi].plots[pli].paidToDate = Math.round(_paidPerCent * _cents);
     if (!state.projects[pi].plots[pli].adjustmentHistory) state.projects[pi].plots[pli].adjustmentHistory = [];
   }
   saveData();
