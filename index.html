@@ -678,19 +678,19 @@ body{background:var(--bg);color:var(--tx);font-family:'Noto Sans Telugu',sans-se
 .proj-val.amb{color:var(--amb)}.proj-val.teal{color:var(--teal)}.proj-val.rose{color:var(--rose)}.proj-val.sage{color:var(--sage)}
 .profit-bar-wrap{margin:10px 14px;background:var(--s3);border-radius:8px;overflow:hidden;height:8px}
 .profit-bar{height:100%;border-radius:8px;transition:width 0.6s ease}
-.house-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;padding:10px 14px}
-.house-tile{background:var(--s3);border:1px solid var(--bd2);border-radius:12px;padding:16px;cursor:pointer;transition:border-color 0.15s;aspect-ratio:1;display:flex;flex-direction:column;justify-content:center}
+.house-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;padding:8px 12px}
+.house-tile{background:var(--s3);border:1px solid var(--bd2);border-radius:10px;padding:10px 8px;cursor:pointer;transition:border-color 0.15s;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
 .house-tile:active{border-color:var(--amb)}
 .house-tile.sold{border-color:rgba(122,200,90,0.4);background:rgba(122,200,90,0.05)}
 .house-tile.building{border-color:rgba(232,184,74,0.4);background:rgba(232,184,74,0.05)}
-.ht-ico{font-size:54px;margin-bottom:8px;line-height:1}
-.ht-name{font-size:15px;font-weight:700}
-.ht-cost{font-size:13px;font-family:'JetBrains Mono';color:var(--amb);margin-top:4px}
-.ht-status{font-size:12px;margin-top:5px;padding:3px 8px;border-radius:5px;display:inline-block}
+.ht-ico{font-size:28px;margin-bottom:4px;line-height:1}
+.ht-name{font-size:12px;font-weight:700}
+.ht-cost{font-size:11px;font-family:'JetBrains Mono';color:var(--amb);margin-top:2px}
+.ht-status{font-size:10px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block}
 .ht-status.sold{background:rgba(122,200,90,0.15);color:var(--sage)}
 .ht-status.building{background:rgba(232,184,74,0.12);color:var(--amb)}
 .ht-status.planned{background:rgba(90,175,232,0.12);color:var(--sky)}
-.ht-type{font-size:10px;margin-top:3px;padding:1px 6px;border-radius:4px;display:inline-block;background:rgba(90,175,232,0.12);color:var(--sky)}
+.ht-type{font-size:9px;margin-top:2px;padding:1px 5px;border-radius:4px;display:inline-block;background:rgba(90,175,232,0.12);color:var(--sky)}
 .ht-type.house{background:rgba(232,184,74,0.12);color:var(--amb)}
 
 /* PROFITABILITY */
@@ -5019,7 +5019,7 @@ function renderProjects() {
       if (plt.status==='sold' && plotProfit !== null) {
         var pc = plotProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
         var ps = plotProfit >= 0 ? '+' : '';
-        profitHtml = '<div style="font-size:13px;font-weight:700;color:'+pc+';margin-top:4px;font-family:JetBrains Mono">'+ps+shortAmt(plotProfit)+'</div>';
+        profitHtml = '<div style="font-size:11px;font-weight:700;color:'+pc+';margin-top:2px;font-family:JetBrains Mono">'+ps+shortAmt(plotProfit)+'</div>';
       }
       plotTiles += '<div class="house-tile '+sc+'" data-proj="'+pidx+'" data-plot="'+pli+'" onclick="openPlotByIndex(this)">'
         +'<div class="ht-ico">'+ico+'</div>'
