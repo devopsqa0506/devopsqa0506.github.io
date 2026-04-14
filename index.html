@@ -5071,11 +5071,13 @@ function deleteProjByIndex(el) {
     deleteFromSheet('ProjectIncome', 'projId', projId);
     
     deleteFromSheet('LandPayments', 'projId', projId);
+    deleteFromSheet('PlotLandPayments', 'projectId', projId);
   }
   
   // Delete from local state
   state.projects.splice(idx, 1);
   state.landPayments = (state.landPayments||[]).filter(function(p){ return p.projId !== projId; });
+  state.plotLandPayments = (state.plotLandPayments||[]).filter(function(p){ return p.projectId !== projId; });
   
   saveData();
   renderProjects();
