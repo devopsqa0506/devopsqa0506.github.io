@@ -5375,6 +5375,7 @@ function saveAdjustLand(pi, pli) {
 
 // Debounce map — prevents duplicate delete+insert when syncProjectPlots called rapidly
 var _syncPlotsTimers = {};
+var _syncIncomeTimers = {};
 
 function syncProjectPlots(projId) {
   var proj = (state.projects||[]).find(function(p){ return p.id===projId; });
@@ -5470,38 +5471,41 @@ function syncPlotLandPayments(projId) {
 
 // ══ Sync ProjectIncome sheet ══
 function syncProjectIncome(projId) {
-  var proj = (state.projects||[]).find(function(p){ return p.id===projId; });
-  if (!proj) return;
-
-  // no-cors fetch returns opaque response — Promise.resolve fires immediately
-  // without waiting for server-side delete. Use setTimeout (same as syncProjectPlots).
-  deleteFromSheet('ProjectIncome', 'projId', projId);
-  setTimeout(function() {
+  if (!projId || !cfg.scriptUrl || !cfg.sheetId) return;
+  // Debounce — collapses rapid consecutive calls into one
+  if (_syncIncomeTimers[projId]) clearTimeout(_syncIncomeTimers[projId]);
+  _syncIncomeTimers[projId] = setTimeout(function() {
+    delete _syncIncomeTimers[projId];
     var _proj = (state.projects||[]).find(function(p){ return p.id===projId; });
     if (!_proj) return;
-    var incomeRows = [];
-    (_proj.plots||[]).forEach(function(plt) {
-      if (plt.advanceReceived && plt.advanceReceived > 0) {
-        incomeRows.push(['adv_'+plt.id, projId, _proj.name, plt.id, plt.plotNo||'', 'advance',
-          plt.advanceReceived, plt.date||today(), plt.buyer||'', 'Advance received']);
-      }
-      (plt.partialPayments||[]).forEach(function(pp) {
-        if (pp.amount && pp.amount > 0) {
-          incomeRows.push([pp.id, projId, _proj.name, plt.id, plt.plotNo||'', 'partial_payment',
-            pp.amount, pp.date||today(), plt.buyer||'', pp.desc||'Partial payment']);
+    deleteFromSheet('ProjectIncome', 'projId', projId);
+    setTimeout(function() {
+      var _proj2 = (state.projects||[]).find(function(p){ return p.id===projId; });
+      if (!_proj2) return;
+      var incomeRows = [];
+      (_proj2.plots||[]).forEach(function(plt) {
+        if (plt.advanceReceived && plt.advanceReceived > 0) {
+          incomeRows.push(['adv_'+plt.id, projId, _proj2.name, plt.id, plt.plotNo||'', 'advance',
+            plt.advanceReceived, plt.date||today(), plt.buyer||'', 'Advance received']);
         }
+        (plt.partialPayments||[]).forEach(function(pp) {
+          if (pp.amount && pp.amount > 0) {
+            incomeRows.push([pp.id, projId, _proj2.name, plt.id, plt.plotNo||'', 'partial_payment',
+              pp.amount, pp.date||today(), plt.buyer||'', pp.desc||'Partial payment']);
+          }
+        });
       });
-    });
-    if (incomeRows.length === 0) return;
-    fetch(cfg.scriptUrl+'?action=batchAppend', {
-      method:'POST', mode:'no-cors',
-      body:JSON.stringify({
-        sheetId:cfg.sheetId, sheetName:'ProjectIncome',
-        headers:['id','projId','projectName','plotId','plotNo','incomeType','amount','date','buyerName','notes'],
-        rows:incomeRows
-      })
-    }).catch(function(){});
-  }, 1500);
+      if (incomeRows.length === 0) return;
+      fetch(cfg.scriptUrl+'?action=batchAppend', {
+        method:'POST', mode:'no-cors',
+        body:JSON.stringify({
+          sheetId:cfg.sheetId, sheetName:'ProjectIncome',
+          headers:['id','projId','projectName','plotId','plotNo','incomeType','amount','date','buyerName','notes'],
+          rows:incomeRows
+        })
+      }).catch(function(){});
+    }, 2000);
+  }, 800);
 }
 
 
