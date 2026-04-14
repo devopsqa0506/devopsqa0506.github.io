@@ -5389,34 +5389,29 @@ function syncProjectPlots(projId) {
   var proj = (state.projects||[]).find(function(p){ return p.id===projId; });
   if (!proj) return;
   
-  // Delete old ProjectExpenses for this project — wait before appending
+  // Delete old ProjectExpenses for this project — wait before batchAppend
   Promise.resolve(deleteFromSheet('ProjectExpenses', 'projId', projId)).then(function() {
-    // Re-sync all plot expenses
+    var expRows = [];
     (proj.plots||[]).forEach(function(plt) {
-      // Construction expenses
       (plt.constructionExpenses||[]).forEach(function(exp) {
-        pushToSheet('ProjectExpenses',
-          ['id','projId','plotId','type','category','desc','amount','date'],
-          [exp.id, projId, plt.id, 'construction', 'Construction', exp.desc||'', exp.amount||0, exp.date||'']
-        );
+        expRows.push([exp.id, projId, plt.id, 'construction', 'Construction', exp.desc||'', exp.amount||0, exp.date||'']);
       });
-      
-      // Misc expenses
       (plt.miscExpenses||[]).forEach(function(exp) {
-        pushToSheet('ProjectExpenses',
-          ['id','projId','plotId','type','category','desc','amount','date'],
-          [exp.id, projId, plt.id, 'misc', exp.type||'Misc', '', exp.amount||0, exp.date||'']
-        );
+        expRows.push([exp.id, projId, plt.id, 'misc', exp.type||'Misc', '', exp.amount||0, exp.date||'']);
       });
-      
-      // Other expenses
       (plt.otherExpenses||[]).forEach(function(exp) {
-        pushToSheet('ProjectExpenses',
-          ['id','projId','plotId','type','category','desc','amount','date'],
-          [exp.id, projId, plt.id, 'other', 'Other', exp.desc||'', exp.amount||0, exp.date||'']
-        );
+        expRows.push([exp.id, projId, plt.id, 'other', 'Other', exp.desc||'', exp.amount||0, exp.date||'']);
       });
     });
+    if (!expRows.length) return;
+    fetch(cfg.scriptUrl+'?action=batchAppend', {
+      method:'POST', mode:'no-cors',
+      body:JSON.stringify({
+        sheetId:cfg.sheetId, sheetName:'ProjectExpenses',
+        headers:['id','projId','plotId','type','category','desc','amount','date'],
+        rows:expRows
+      })
+    }).catch(function(){});
   });
   
   // Update Projects sheet with full plot data
@@ -5450,19 +5445,16 @@ function syncProjectPlots(projId) {
 function syncPlotLandPayments(projId) {
   var proj = (state.projects||[]).find(function(p){ return p.id===projId; });
   if (!proj || !cfg.scriptUrl || !cfg.sheetId) return;
-  var rows = (proj.plots||[]).map(function(plt) {
-    return [plt.id, plt.plotNo||'', projId, plt.sizeInCents||0,
-            plt.plotLandCost||0, plt.paidToDate||0,
-            JSON.stringify(plt.adjustmentHistory||[])];
-  });
-  Promise.resolve(deleteFromSheet('PlotLandPayments','projectId',projId)).then(function(){
-    if (!rows.length) return;
-    fetch(cfg.scriptUrl+'?action=batchAppend', {
+  (proj.plots||[]).forEach(function(plt) {
+    fetch(cfg.scriptUrl+'?action=updateRow', {
       method:'POST', mode:'no-cors',
       body:JSON.stringify({
         sheetId:cfg.sheetId, sheetName:'PlotLandPayments',
+        matchCol:'plotId', matchVal:plt.id,
         headers:['plotId','plotNo','projectId','plotCents','plotLandCost','paidToDate','adjustmentHistoryJson'],
-        rows:rows
+        row:[plt.id, plt.plotNo||'', projId, plt.sizeInCents||0,
+             plt.plotLandCost||0, plt.paidToDate||0,
+             JSON.stringify(plt.adjustmentHistory||[])]
       })
     }).catch(function(){});
   });
