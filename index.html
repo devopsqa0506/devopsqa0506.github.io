@@ -5470,30 +5470,30 @@ function syncPlotLandPayments(projId) {
 }
 
 // ══ Sync ProjectIncome sheet ══
-function syncProjectIncome(projId) {
-  if (!projId || !cfg.scriptUrl || !cfg.sheetId) return;
-  // Debounce — collapses rapid consecutive calls into one
-  if (_syncIncomeTimers[projId]) clearTimeout(_syncIncomeTimers[projId]);
-  _syncIncomeTimers[projId] = setTimeout(function() {
-    delete _syncIncomeTimers[projId];
+function syncPlotIncome(projId, plotId) {
+  // Per-plot sync — never touches other plots' rows
+  if (!projId || !plotId || !cfg.scriptUrl || !cfg.sheetId) return;
+  var key = projId + '_' + plotId;
+  if (_syncIncomeTimers[key]) clearTimeout(_syncIncomeTimers[key]);
+  _syncIncomeTimers[key] = setTimeout(function() {
+    delete _syncIncomeTimers[key];
     var _proj = (state.projects||[]).find(function(p){ return p.id===projId; });
     if (!_proj) return;
-    deleteFromSheet('ProjectIncome', 'projId', projId);
+    var plt = (_proj.plots||[]).find(function(p){ return p.id===plotId; });
+    if (!plt) return;
+    // Delete only THIS plot's rows
+    deleteFromSheet('ProjectIncome', 'plotId', plotId);
     setTimeout(function() {
-      var _proj2 = (state.projects||[]).find(function(p){ return p.id===projId; });
-      if (!_proj2) return;
       var incomeRows = [];
-      (_proj2.plots||[]).forEach(function(plt) {
-        if (plt.advanceReceived && plt.advanceReceived > 0) {
-          incomeRows.push(['adv_'+plt.id, projId, _proj2.name, plt.id, plt.plotNo||'', 'advance',
-            plt.advanceReceived, plt.date||today(), plt.buyer||'', 'Advance received']);
+      if (plt.advanceReceived && plt.advanceReceived > 0) {
+        incomeRows.push(['adv_'+plt.id, projId, _proj.name, plt.id, plt.plotNo||'', 'advance',
+          plt.advanceReceived, plt.saleDate||plt.date||today(), plt.buyer||'', 'Advance received']);
+      }
+      (plt.partialPayments||[]).forEach(function(pp) {
+        if (pp.amount && pp.amount > 0) {
+          incomeRows.push([pp.id, projId, _proj.name, plt.id, plt.plotNo||'', 'partial_payment',
+            pp.amount, pp.date||today(), plt.buyer||'', pp.desc||'Partial payment']);
         }
-        (plt.partialPayments||[]).forEach(function(pp) {
-          if (pp.amount && pp.amount > 0) {
-            incomeRows.push([pp.id, projId, _proj2.name, plt.id, plt.plotNo||'', 'partial_payment',
-              pp.amount, pp.date||today(), plt.buyer||'', pp.desc||'Partial payment']);
-          }
-        });
       });
       if (incomeRows.length === 0) return;
       fetch(cfg.scriptUrl+'?action=batchAppend', {
@@ -5506,6 +5506,14 @@ function syncProjectIncome(projId) {
       }).catch(function(){});
     }, 2000);
   }, 800);
+}
+function syncProjectIncome(projId) {
+  // Legacy wrapper — syncs all plots individually
+  var _proj = (state.projects||[]).find(function(p){ return p.id===projId; });
+  if (!_proj) return;
+  (_proj.plots||[]).forEach(function(plt) {
+    syncPlotIncome(projId, plt.id);
+  });
 }
 
 
@@ -5571,7 +5579,7 @@ function updatePlotField(el, field, type) {
   }
   // Sync income when advance or buyer changes
   if (['advanceReceived','buyer'].indexOf(field) !== -1) {
-    syncProjectIncome(state.projects[pi].id);
+    syncPlotIncome(state.projects[pi].id, state.projects[pi].plots[pli].id);
   }
   // Realtime updates if SOLD plot + key field changed
   if (state.projects[pi].plots[pli].status === 'sold' && (field === 'salePrice' || field === 'advanceReceived')) {
@@ -5616,7 +5624,7 @@ function updatePartialPayment(el, pi, pli, ppIdx, field, type) {
   if (field === 'amount' || field === 'desc' || field === 'date') {
     recalcPaymentTotal(pi, pli, null);
     updateAdvancesReceivedTotal();
-    syncProjectIncome(state.projects[pi].id);
+    syncPlotIncome(state.projects[pi].id, state.projects[pi].plots[pli].id);
   }
   // Realtime profit update if SOLD and payment changed
   if (plt.status === 'sold' && field === 'amount') updatePlotProfitDisplay();
@@ -5646,7 +5654,7 @@ function deletePartialPayment(pi, pli, ppIdx) {
   plt.partialPayments.splice(ppIdx, 1);
   saveData();
   syncProjectPlots(state.projects[pi].id);
-  syncProjectIncome(state.projects[pi].id);
+  syncPlotIncome(state.projects[pi].id, state.projects[pi].plots[pli].id);
   recalcPaymentTotal(pi, pli, null);
   updateAdvancesReceivedTotal();
   openPlotByIndex({dataset:{proj:String(pi),plot:String(pli)}});
