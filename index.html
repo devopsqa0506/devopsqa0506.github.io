@@ -683,7 +683,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Noto Sans Telugu',sans-se
 .house-tile:active{border-color:var(--amb)}
 .house-tile.sold{border-color:rgba(122,200,90,0.4);background:rgba(122,200,90,0.05)}
 .house-tile.building{border-color:rgba(232,184,74,0.4);background:rgba(232,184,74,0.05)}
-.ht-ico{font-size:22px;margin-bottom:6px}
+.ht-ico{font-size:44px;margin-bottom:6px;line-height:1}
 .ht-name{font-size:12px;font-weight:600}
 .ht-cost{font-size:11px;font-family:'JetBrains Mono';color:var(--amb);margin-top:3px}
 .ht-status{font-size:10px;margin-top:4px;padding:2px 6px;border-radius:5px;display:inline-block}
@@ -4998,18 +4998,34 @@ function renderProjects() {
     var profitColor = expProfit>0?'var(--sage)':expProfit<0?'var(--rose)':'var(--amb)';
 
     // Plot tiles
+    var centRate = Number(proj.totalCents||0) > 0 ? (totalLandDeal / Number(proj.totalCents)) : 0;
     var plotTiles = '';
     plots.forEach(function(plt, pli) {
       var sc = plt.status==='sold'?'sold':plt.status==='building'?'building':'';
       var ico = plt.type==='house'
-        ? (plt.status==='sold'?'🏠':plt.status==='building'?'🏗️':'📋')
-        : (plt.status==='sold'?'✅':'📋');
+        ? (plt.status==='sold'?'🏡':plt.status==='building'?'🏗️':'🧱')
+        : (plt.status==='sold'?'🎉':'🌿');
       var stLabel = plt.status==='sold'?'Sold':plt.status==='building'?'Building':'Planned';
       var typeLabel = plt.type==='house'?'House':'Plot';
+      // Per-plot profit
+      var plotLandCost = centRate * Number(plt.sizeInCents||0);
+      var plotMisc = (plt.miscExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
+      var plotOther = (plt.otherExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
+      var plotConst = plt.type==='house' ? (plt.constructionExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0) : 0;
+      var plotCostBasis = plotLandCost + plotConst + plotMisc + plotOther;
+      var plotSale = Number(plt.salePrice||0);
+      var plotProfit = plt.status==='sold' ? (plotSale - plotCostBasis) : null;
+      var profitHtml = '';
+      if (plt.status==='sold' && plotProfit !== null) {
+        var pc = plotProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
+        var ps = plotProfit >= 0 ? '+' : '';
+        profitHtml = '<div style="font-size:10px;font-weight:700;color:'+pc+';margin-top:3px;font-family:JetBrains Mono">'+ps+shortAmt(plotProfit)+'</div>';
+      }
       plotTiles += '<div class="house-tile '+sc+'" data-proj="'+pidx+'" data-plot="'+pli+'" onclick="openPlotByIndex(this)">'
         +'<div class="ht-ico">'+ico+'</div>'
         +'<div class="ht-name">Plot '+escH(plt.plotNo||String(pli+1))+'</div>'
-        +'<div class="ht-cost">'+(plt.sizeInCents?plt.sizeInCents+' cents':'')+'</div>'
+        +'<div class="ht-cost" style="color:var(--teal);font-weight:600">'+(plt.sizeInCents?plt.sizeInCents+' ¢':'—')+'</div>'
+        +profitHtml
         +'<div class="ht-type '+(plt.type||'plot')+'">'+typeLabel+'</div>'
         +'<div class="ht-status '+(plt.status||'planned')+'">'+stLabel+'</div>'
         +'</div>';
@@ -5207,13 +5223,23 @@ function openPlotByIndex(el) {
     {v:'Borewell',     l:'🕳️ Borewell'},
     {v:'BoreMotor',    l:'⚡ BoreMotor'},
     {v:'Brokerage',    l:'🤝 Brokerage'},
-    {v:'ElectricMeter',l:'💡 ElectricMeter'}
+    {v:'ElectricMeter',l:'💡 ElectricMeter'},
+    {v:'Stamp',        l:'🏛️ Stamp Duty'},
+    {v:'Legal',        l:'⚖️ Legal/EC'},
+    {v:'Development',  l:'🛤️ Development'},
+    {v:'Misc',         l:'📦 Misc'},
+    {v:'Other',        l:'🔹 Other'}
   ];
   body += '<div class="seg-t" style="margin-top:12px">📋 Misc Expenses</div>';
   (plt.miscExpenses||[]).forEach(function(me, meIdx) {
+    // Fallback: if stored type not in list, add it dynamically
+    var knownVals = miscTypes.map(function(t){ return t.v; });
+    var extraOpt = (me.type && knownVals.indexOf(me.type) === -1)
+      ? '<option value="'+escH(me.type)+'" selected>'+escH(me.type)+'</option>' : '';
     body += '<div style="margin-bottom:6px">'
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center">'
       +'<select class="fi" onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'type\',\'text\',this)" style="font-size:12px">'
+      +extraOpt
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(me.amount)+'" placeholder="Amount" '
@@ -5943,8 +5969,8 @@ function renderExpenditureScreen() {
       plots.forEach(function(plt, pli) {
         var statusColor = plt.status==='sold' ? 'var(--sage)' : plt.status==='building' ? 'var(--amb)' : 'var(--sky)';
         var statusIcon = plt.type==='house'
-          ? (plt.status==='sold' ? '🏠' : plt.status==='building' ? '🏗️' : '🧱')
-          : (plt.status==='sold' ? '✅' : '📋');
+          ? (plt.status==='sold' ? '🏡' : plt.status==='building' ? '🏗️' : '🧱')
+          : (plt.status==='sold' ? '🎉' : '🌿');
         var statusLabel = plt.status==='sold' ? 'Sold' : plt.status==='building' ? 'Building' : 'Planned';
         html += '<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:10px;cursor:pointer;text-align:center;transition:all 0.2s" onclick="openPlotExpenditure('+pidx+','+pli+')">'
           + '<div style="font-size:20px;margin-bottom:4px">'+statusIcon+'</div>'
