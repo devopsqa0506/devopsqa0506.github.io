@@ -2563,24 +2563,17 @@ function setSyncStatus(s) {
   var url = cfg.scriptUrl || SCRIPT_URL;
   var sid = cfg.sheetId || '';
   if (!url) { console.warn('SiteBook: no scriptUrl'); return; }
-  if (!sid) { console.warn('SiteBook: no sheetId'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return; }
-  // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  fetch(url + '?action=append', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({sheetId:sid, sheetName:sheetName, headers:headers, row:row})
-  });
-}
-
-// ── deleteFromSheet via GET (avoids 302 redirect on POST) ──
-function deleteFromSheet(sheetName, matchCol, matchVal) {
-  if (!cfg.scriptUrl || !cfg.sheetId) return;
-  // POST with action in URL param — survives 302 redirect, body delivered via no-cors
-  fetch(cfg.scriptUrl + '?action=deleteRow', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({sheetId:cfg.sheetId, sheetName:sheetName, matchCol:matchCol, matchVal:matchVal})
-  });
+  if (!sid) { console.warn('SiteBook: no sheetId — open Settings and enter your Google Sheet ID'); toast('⚠️ Sheet ID not set — Settings లో Sheet ID enter చేయండి', 'err'); return; }
+  setSyncStatus('syncing');
+  var payload = JSON.stringify({action:'append',sheetId:sid,sheetName:sheetName,headers:headers,row:row});
+  console.log('SiteBook pushToSheet:', sheetName, payload);
+  fetch(url, {
+    method:'POST', mode:'no-cors',
+    body: payload
+  }).then(function(){ setSyncStatus('ok'); state.lastSync = new Date().toISOString(); saveData();
+    document.getElementById('last-sync').textContent = 'Synced '+nowt();
+    console.log('SiteBook pushToSheet ok:', sheetName);
+  }).catch(function(e){ setSyncStatus('err'); console.error('SiteBook pushToSheet err:', e); });
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -2720,46 +2713,57 @@ function mergeSheetData(sheetData) {
   renderDocList();
   refreshUI();
 
-  // ── Loans — full replace, sheet is source of truth ──
-  var lnData = sheetData.Loans || [];
-  var lnHdrs = lnData[0] || []; var lnRows = lnData.slice(1);
-  state.loans = lnRows.map(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
-    o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; return o;
-  }).filter(function(o){ return o.id; });
-
-  // ── LoanPayments — full replace, sheet is source of truth ──
-  var lpData = sheetData.LoanPayments || [];
-  var lpHdrs = lpData[0] || []; var lpRows = lpData.slice(1);
-  state.loanPayments = lpRows.map(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
-    o.amount=Math.round(Number(o.amount)||0);
-    o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0);
-    o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0);
-    // Force string types — Sheets may return Date objects or booleans
-    if (o.emiOrigDate) o.emiOrigDate = String(o.emiOrigDate).slice(0,10);
-    if (o.isEmi !== undefined) o.isEmi = (o.isEmi===true||o.isEmi==='true'||o.isEmi==='TRUE');
-    return o;
-  }).filter(function(o){ return o.id; });
-
-  // ── ProjectIncome — full replace, sheet is source of truth ──
-  var piData = sheetData.ProjectIncome || [];
-  var piHdrs = piData[0] || []; var piRows = piData.slice(1);
-  state.projIncome = piRows.map(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
-    o.amount=Math.round(Number(o.amount)||0); return o;
-  }).filter(function(o){ return o.id; });
-
-  // ── LandPayments — full replace, sheet is source of truth ──
-  var lpData2 = sheetData.LandPayments || [];
-  var lpHdrs2 = lpData2[0] || []; var lpRows2 = lpData2.slice(1);
-  state.landPayments = lpRows2.map(function(r){ var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
-    o.amount=Math.round(Number(o.amount)||0); return o;
-  }).filter(function(o){ return o.id; });
-
-  // ── ProjectExpenses — full replace, sheet is source of truth ──
-  var peData = sheetData.ProjectExpenses || [];
-  var peHdrs = peData[0] || []; var peRows = peData.slice(1);
-  state.projExpenses = peRows.map(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
-    o.amount=Math.round(Number(o.amount)||0); return o;
-  }).filter(function(o){ return o.id; });
+  // ── Merge Loans ──
+  if (sheetData.Loans && sheetData.Loans.length > 1) {
+    var lnHdrs = sheetData.Loans[0]; var lnRows = sheetData.Loans.slice(1);
+    if (!state.loans) state.loans=[];
+    var lnIds = new Set(state.loans.map(function(l){ return l.id; }));
+    lnRows.forEach(function(r){ var o={}; lnHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      if (o.id && !lnIds.has(o.id)) { o.principal=Math.round(Number(o.principal)||0); o.rate=Number(o.rate)||0; state.loans.push(o); }
+    });
+  }
+  // ── Merge LoanPayments ──
+  if (sheetData.LoanPayments && sheetData.LoanPayments.length > 1) {
+    var lpHdrs = sheetData.LoanPayments[0]; var lpRows = sheetData.LoanPayments.slice(1);
+    if (!state.loanPayments) state.loanPayments=[];
+    var lpIds = new Set(state.loanPayments.map(function(p){ return p.id; }));
+    lpRows.forEach(function(r){ var o={}; lpHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      if (o.id && !lpIds.has(o.id)) { 
+        o.amount=Math.round(Number(o.amount)||0); 
+        // Support both old and new schema
+        o.interestAmount=Math.round(Number(o.interestAmount||o.interestPart)||0); 
+        o.principalAmount=Math.round(Number(o.principalAmount||o.principalPart)||0); 
+        state.loanPayments.push(o); 
+      }
+    });
+  }
+  // ── Merge ProjectIncome ──
+  if (sheetData.ProjectIncome && sheetData.ProjectIncome.length > 1) {
+    var piHdrs = sheetData.ProjectIncome[0]; var piRows = sheetData.ProjectIncome.slice(1);
+    if (!state.projIncome) state.projIncome=[];
+    var piIds = new Set(state.projIncome.map(function(i){ return i.id; }));
+    piRows.forEach(function(r){ var o={}; piHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      if (o.id && !piIds.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.projIncome.push(o); }
+    });
+  }
+  // ── Merge ProjectExpenses ──
+  if (sheetData.LandPayments && sheetData.LandPayments.length > 1) {
+    var lpHdrs2 = sheetData.LandPayments[0]; var lpRows2 = sheetData.LandPayments.slice(1);
+    if (!state.landPayments) state.landPayments=[];
+    var lpIds2 = new Set(state.landPayments.map(function(p){ return p.id; }));
+    lpRows2.forEach(function(r){
+      var o={}; lpHdrs2.forEach(function(h,i){ o[h]=r[i]; });
+      if (o.id && !lpIds2.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.landPayments.push(o); }
+    });
+  }
+  if (sheetData.ProjectExpenses && sheetData.ProjectExpenses.length > 1) {
+    var peHdrs = sheetData.ProjectExpenses[0]; var peRows = sheetData.ProjectExpenses.slice(1);
+    if (!state.projExpenses) state.projExpenses=[];
+    var peIds = new Set(state.projExpenses.map(function(e){ return e.id; }));
+    peRows.forEach(function(r){ var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
+      if (o.id && !peIds.has(o.id)) { o.amount=Math.round(Number(o.amount)||0); state.projExpenses.push(o); }
+    });
+  }
   
   // Render finance screens after sync
   renderLoanList();
@@ -5029,13 +5033,29 @@ function deleteProjByIndex(el) {
   
   // Delete from sheets
   if (cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('Projects', 'id', projId);
+    fetch(cfg.scriptUrl, {
+      method:'POST',
+      mode:'no-cors',
+    body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'Projects', matchCol:'id', matchVal:projId})
+    }).catch(function(){});
     
-    deleteFromSheet('ProjectExpenses', 'projId', projId);
+    fetch(cfg.scriptUrl, {
+      method:'POST',
+      mode:'no-cors',
+    body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'projId', matchVal:projId})
+    }).catch(function(){});
     
-    deleteFromSheet('ProjectIncome', 'projId', projId);
+    fetch(cfg.scriptUrl, {
+      method:'POST',
+      mode:'no-cors',
+    body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'projId', matchVal:projId})
+    }).catch(function(){});
     
-    deleteFromSheet('LandPayments', 'projId', projId);
+    fetch(cfg.scriptUrl, {
+      method:'POST',
+      mode:'no-cors',
+    body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'projId', matchVal:projId})
+    }).catch(function(){});
   }
   
   // Delete from local state
@@ -5316,7 +5336,11 @@ function syncProjectPlots(projId) {
   if (!proj) return;
   
   // Delete old ProjectExpenses for this project — wait before appending
-  Promise.resolve(deleteFromSheet('ProjectExpenses', 'projId', projId)).then(function() {
+  fetch(cfg.scriptUrl, {
+    method:'POST',
+    mode:'no-cors',
+    body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'projId', matchVal:projId})
+  }).catch(function(){}).then(function() {
     // Re-sync all plot expenses
     (proj.plots||[]).forEach(function(plt) {
       // Construction expenses
@@ -5361,7 +5385,11 @@ function syncProjectPlots(projId) {
   }).catch(function(){});
   
   // Sync LandPayments — wait for delete before appending to avoid race condition
-  Promise.resolve(deleteFromSheet('LandPayments', 'projId', projId)).then(function() {
+  fetch(cfg.scriptUrl, {
+    method:'POST',
+    mode:'no-cors',
+    body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'projId', matchVal:projId})
+  }).catch(function(){}).then(function() {
     (state.landPayments||[]).filter(function(p){ return p.projId===projId; }).forEach(function(pmt) {
       pushToSheet('LandPayments',
         ['id','projId','date','amount','notes'],
@@ -5377,7 +5405,11 @@ function syncProjectIncome(projId) {
   if (!proj) return;
   
   // Delete old income entries — wait before appending to avoid race condition
-  Promise.resolve(deleteFromSheet('ProjectIncome', 'projId', projId)).then(function() {
+  fetch(cfg.scriptUrl, {
+    method:'POST',
+    mode:'no-cors',
+    body:JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'projId', matchVal:projId})
+  }).catch(function(){}).then(function() {
     (proj.plots||[]).forEach(function(plt) {
       if (plt.advanceReceived && plt.advanceReceived > 0) {
         var advId = 'adv_' + plt.id + '_' + Date.now();
@@ -6792,7 +6824,6 @@ async function runAIInsights() {
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + activeKey,
       {
         method: 'POST',
-        mode:'no-cors',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           contents: [{parts: [{text: INSIGHTS_PROMPT}]}],
@@ -6839,7 +6870,6 @@ async function runAIAlerts() {
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + activeKey,
       {
         method: 'POST',
-        mode:'no-cors',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           contents: [{parts: [{text: ALERTS_PROMPT}]}],
@@ -6882,7 +6912,6 @@ async function processAutoEntry() {
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + activeKey,
       {
         method: 'POST',
-        mode:'no-cors',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           contents: [{parts: [{text: AUTO_ENTRY_PROMPT}]}],
@@ -7153,19 +7182,13 @@ function handleGoogleLogin(response) {
         })
         .catch(function(err) {
           console.error('SiteBook: Drive config load failed after login:', err.message);
-          // If we have a full working config already in localStorage, launch anyway
+          // If we have a full working config already, launch anyway
           if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
             console.warn('SiteBook: Using cached cfg as fallback');
             launchApp();
-          } else if (cfg.sheetId && cfg.scriptUrl) {
-            // Have credentials but setupDone not set — still launch
-            cfg.setupDone = true;
-            saveCfg();
-            launchApp();
           } else {
-            // No config at all — ask for script URL
-            toast('Script URL enter చేయండి', 'info');
-            showScriptUrlPrompt();
+            toast('Config load failed — please re-enter script URL', 'err');
+            showSetupScreen();
           }
         });
     } else if (cfg.setupDone && cfg.sheetId && cfg.scriptUrl) {
@@ -7460,16 +7483,17 @@ function updateEmiEntry(loanId, origDate, field, value) {
 
 // ── Toggle EMI Paid ──
 function toggleEmiPaid(loanId, origDate) {
+  if (!state.emiSchedule) state.emiSchedule = [];
   var loan = (state.loans||[]).find(function(l){return l.id===loanId;});
   if (!loan) return;
-  // Use loanPayments as source of truth — not emiSchedule
-  var existingEmiPmt = (state.loanPayments||[]).find(function(p){
-    return p.loanId===loanId && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===origDate;
-  });
-  var isCurrentlyPaid = !!existingEmiPmt;
-
-  if (!isCurrentlyPaid) {
-    // Mark as paid — calculate interest/principal and save
+  var entry = state.emiSchedule.find(function(s){return s.loanId===loanId && s.origDate===origDate;});
+  if (!entry) {
+    entry = { id:'sch_'+Date.now(), loanId:loanId, origDate:origDate, date:origDate, amount:loan.emi||0, paid:false, interestPart:0, principalPart:0 };
+    state.emiSchedule.push(entry);
+  }
+  entry.paid = !entry.paid;
+  if (entry.paid) {
+    // Calculate interest/principal split based on current outstanding balance (bank logic)
     var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
     var paidPrin = existingPmts.reduce(function(s,p){ return s+Number(p.principalAmount||p.principalPart||0); },0);
     var outstandingBal = Math.max(Number(loan.principal||0) - paidPrin, 0);
@@ -7479,50 +7503,28 @@ function toggleEmiPaid(loanId, origDate) {
     var intPart = (loan.rateType==='0' || !loan.rate) ? 0
                 : loan.rateType==='flat' ? Number(loan.rate||0)
                 : Math.round(outstandingBal * mRate);
-    intPart = Math.min(intPart, Number(loan.emi||0));
-    var prinPart = Math.max(Number(loan.emi||0) - intPart, 0);
-    var pmt = { id:'pmt_emi_'+Date.now(), loanId:loanId, date:origDate, type:'emi',
+    intPart = Math.min(intPart, entry.amount);
+    var prinPart = Math.max(entry.amount - intPart, 0);
+    entry.interestPart = intPart;
+    entry.principalPart = prinPart;
+    // Create payment with NEW schema: principalAmount, interestAmount
+    var pmt = { id:'pmt_emi_'+Date.now(), loanId:loanId, date:entry.date, type:'emi',
                 principalAmount:prinPart, interestAmount:intPart, notes:'EMI', isEmi:true, emiOrigDate:origDate };
     if (!state.loanPayments) state.loanPayments=[];
     state.loanPayments.push(pmt);
+    entry.pmtId = pmt.id;
     pushToSheet('LoanPayments',
-      ['id','loanId','date','type','principalAmount','interestAmount','notes','isEmi','emiOrigDate'],
-      [pmt.id, pmt.loanId, pmt.date, 'emi', prinPart, intPart, 'EMI', 'true', origDate]
+      ['id','loanId','date','type','principalAmount','interestAmount','notes'],
+      [pmt.id, pmt.loanId, pmt.date, 'emi', prinPart, intPart, 'EMI']
     );
   } else {
-    // Mark as unpaid — remove from state and delete from sheet
-    var pmtIdToRemove = existingEmiPmt.id;
-    state.loanPayments = state.loanPayments.filter(function(p){return p.id!==pmtIdToRemove;});
-    if (pmtIdToRemove && cfg.scriptUrl && cfg.sheetId) {
-      deleteFromSheet('LoanPayments', 'id', pmtIdToRemove);
+    if (entry.pmtId) {
+      state.loanPayments = (state.loanPayments||[]).filter(function(p){return p.id!==entry.pmtId;});
+      entry.pmtId = null;
     }
   }
   saveData();
-  var lbody = document.getElementById('lbody_' + loanId);
-  var wasOpen = lbody && lbody.style.display !== 'none';
   renderLoanList();
-  if (wasOpen) {
-    var newBody = document.getElementById('lbody_' + loanId);
-    if (newBody) newBody.style.display = 'block';
-  }
-}
-
-function deleteEmiPayment(loanId, origDate) {
-  var existingEmiPmt = (state.loanPayments||[]).find(function(p){ return p.loanId===loanId && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===origDate; });
-  if (!existingEmiPmt) return;
-  var pmtId = existingEmiPmt.id;
-  state.loanPayments = state.loanPayments.filter(function(p){ return p.id!==pmtId; });
-  if (pmtId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('LoanPayments', 'id', pmtId);
-  }
-  saveData();
-  var lbody2 = document.getElementById('lbody_' + loanId);
-  var wasOpen2 = lbody2 && lbody2.style.display !== 'none';
-  renderLoanList();
-  if (wasOpen2) {
-    var newBody2 = document.getElementById('lbody_' + loanId);
-    if (newBody2) newBody2.style.display = 'block';
-  }
 }
 
 // ── Tab switcher ──
@@ -7796,7 +7798,10 @@ function deletePayment(pmtId) {
   
   // Delete from sheet
   if (pmtId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('LoanPayments', 'id', pmtId);
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'id', matchVal:pmtId})
+    });
   }
   
   renderLoanList();
@@ -7807,23 +7812,22 @@ function deletePayment(pmtId) {
 function deleteLoan(loanId) {
   if (!confirm('Delete this loan and all its payments?')) return;
   
-  // Capture payments before removing from state
-  var pmtsToDelete = (state.loanPayments||[]).filter(function(p){ return p.loanId===loanId; });
   // Delete from state
   state.loans = (state.loans||[]).filter(function(l){ return l.id!==loanId; });
   state.loanPayments = (state.loanPayments||[]).filter(function(p){ return p.loanId!==loanId; });
   saveData();
   
-  // Delete from sheet — individual by id, then sweep by loanId to catch any stragglers
+  // Delete from sheet
   if (loanId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('Loans', 'id', loanId);
-    pmtsToDelete.forEach(function(p) {
-      deleteFromSheet('LoanPayments', 'id', p.id);
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'Loans', matchCol:'id', matchVal:loanId})
     });
-    // Straggler sweep — catches any payments missed due to async timing
-    setTimeout(function() {
-      deleteFromSheet('LoanPayments', 'loanId', loanId);
-    }, 2000);
+    // Delete all payments for this loan
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LoanPayments', matchCol:'loanId', matchVal:loanId})
+    });
   }
   
   renderLoanList();
@@ -7963,20 +7967,17 @@ function renderLoanList() {
       var toD = new Date(now);
 
       html += '<div style="font-size:12px;font-weight:700;color:var(--tx2);margin:8px 0 4px">📅 EMI Schedule ('+fromD.toISOString().slice(0,7)+' to '+toD.toISOString().slice(0,7)+'):</div>'
-        +'<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.6fr 0.4fr;gap:3px;margin-bottom:3px;padding:0 2px">'
+        +'<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr;gap:3px;margin-bottom:3px;padding:0 2px">'
           +'<span style="font-size:10px;color:var(--tx3)">Date</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Interest</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Principal</span>'
           +'<span style="font-size:10px;color:var(--tx3)">Paid</span>'
-          +'<span></span>'
         +'</div>';
 
       var d = new Date(fromD);
       while (d <= toD) {
         var dStr = d.toISOString().slice(0,10);
         var sch = schedForLoan.find(function(s){return s.origDate===dStr;}) || {origDate:dStr, date:dStr, amount:loan.emi, paid:false, interestPart:0, principalPart:0};
-        var existingEmiPmt = (state.loanPayments||[]).find(function(p){ return p.loanId===loan.id && (p.isEmi===true||p.isEmi==='true') && p.emiOrigDate===dStr; });
-        var isPaid = !!existingEmiPmt;
         // Calculate interest/principal if not stored
         if (!sch.interestPart && !sch.principalPart && sch.amount) {
           var existingPmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===loan.id && !p.isEmi; });
@@ -7994,12 +7995,11 @@ function renderLoanList() {
         html += '<div style="display:grid;grid-template-columns:1.5fr 1.2fr 1.2fr 0.8fr;gap:3px;align-items:center;margin-bottom:3px">'
           +'<input type="date" class="fi" value="'+sch.date+'" style="font-size:11px;margin:0;padding:3px 5px" '
             +'onchange="updateEmiEntry(\''+loan.id+'\',\''+dStr+'\',\'date\',this.value)">'
-          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(existingEmiPmt?Number(existingEmiPmt.interestAmount||0):(sch.interestPart||0))+'</div>'
-          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(existingEmiPmt?Number(existingEmiPmt.principalAmount||0):(sch.principalPart||0))+'</div>'
-          +'<input type="checkbox" '+(isPaid?'checked disabled':'')+' '
-            +(isPaid?'':('onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '))
-            +'style="width:18px;height:18px;'+(isPaid?'cursor:not-allowed;opacity:0.5':'cursor:pointer')+';accent-color:var(--teal)">'
-          +(isPaid?('<button onclick="deleteEmiPayment(\''+loan.id+'\',\''+dStr+'\')" style="background:none;border:none;color:var(--rose);font-size:13px;cursor:pointer;padding:0 4px;line-height:1" title="Remove payment">✕</button>'):'<span></span>')
+          +'<div style="font-size:11px;color:var(--rose);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(sch.interestPart||0)+'</div>'
+          +'<div style="font-size:11px;color:var(--teal);font-family:JetBrains Mono;font-weight:600;padding:0 5px">'+rup(sch.principalPart||0)+'</div>'
+          +'<input type="checkbox" '+(sch.paid?'checked':'')+' '
+            +'onchange="toggleEmiPaid(\''+loan.id+'\',\''+dStr+'\')" '
+            +'style="width:18px;height:18px;cursor:pointer;accent-color:var(--teal)">'
         +'</div>';
         d.setMonth(d.getMonth()+1);
       }
@@ -8161,7 +8161,10 @@ function deleteLandPayment(pmtId) {
   
   // Delete from sheet
   if (pmtId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('LandPayments', 'id', pmtId);
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'LandPayments', matchCol:'id', matchVal:pmtId})
+    });
   }
   
   updateAdvancesReceivedTotal();
@@ -8349,7 +8352,10 @@ function deleteProjIncome(incId) {
   
   // Delete from sheet
   if (incId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('ProjectIncome', 'id', incId);
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectIncome', matchCol:'id', matchVal:incId})
+    });
   }
   
   renderProjExp();
@@ -8570,7 +8576,10 @@ function deleteProjExpense(expId) {
   
   // Delete from sheet
   if (expId && cfg.scriptUrl && cfg.sheetId) {
-    deleteFromSheet('ProjectExpenses', 'id', expId);
+    fetch(cfg.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'deleteRow', sheetId:cfg.sheetId, sheetName:'ProjectExpenses', matchCol:'id', matchVal:expId})
+    });
   }
   
   renderProjExp();
