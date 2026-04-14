@@ -5525,8 +5525,8 @@ function updatePlotField(el, field, type) {
     if (!state.projects[pi].plots[pli].adjustmentHistory) state.projects[pi].plots[pli].adjustmentHistory = [];
   }
   saveData();
-  // Sync critical fields
-  if (['status','type','salePrice','buyer','plotNo','sizeInCents'].indexOf(field) !== -1) {
+  // Only sync on structural plot changes (not every field edit)
+  if (['type','plotNo','sizeInCents'].indexOf(field) !== -1) {
     syncProjectPlots(state.projects[pi].id);
   }
   // Sync income when advance or buyer changes
@@ -5576,7 +5576,6 @@ function updatePartialPayment(el, pi, pli, ppIdx, field, type) {
   if (field === 'amount' || field === 'desc' || field === 'date') {
     recalcPaymentTotal(pi, pli, null);
     updateAdvancesReceivedTotal();
-    syncProjectPlots(state.projects[pi].id);
     syncProjectIncome(state.projects[pi].id);
   }
   // Realtime profit update if SOLD and payment changed
@@ -5630,7 +5629,6 @@ function updateConstructionExpense(pi, pli, idx, field, type, el) {
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
     updateAdvancesReceivedTotal();
-    syncProjectPlots(state.projects[pi].id);
   }
 }
 function deleteConstructionExpense(pi, pli, idx) {
@@ -5660,7 +5658,6 @@ function updateMiscExpense(pi, pli, idx, field, type, el) {
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
     updateAdvancesReceivedTotal();
-    syncProjectPlots(state.projects[pi].id);
   }
 }
 function deleteMiscExpense(pi, pli, idx) {
@@ -5690,7 +5687,6 @@ function updateOtherExpense(pi, pli, idx, field, type, el) {
   if (field==='amount') {
     recalcHouseTotals(pi, pli);
     updateAdvancesReceivedTotal();
-    syncProjectPlots(state.projects[pi].id);
   }
 }
 function deleteOtherExpense(pi, pli, idx) {
