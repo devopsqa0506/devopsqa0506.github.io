@@ -2281,11 +2281,11 @@ var state = loadData();
   // Migrate plot construction expenses
   (state.projects||[]).forEach(function(proj) {
     (proj.plots||[]).forEach(function(plt) {
-      if (!plt.constructionExpenses) {
+      if (plt.type === 'house' && !plt.constructionExpenses) {
         plt.constructionExpenses = [{ id:'ce_0', desc:'Advance Construction', amount: plt.constructionCost||0, date:'' }];
-        plt.miscExpenses = [];
-        plt.otherExpenses = [];
       }
+      if (!plt.miscExpenses) plt.miscExpenses = [];
+      if (!plt.otherExpenses) plt.otherExpenses = [];
     });
   });
 })();
@@ -5090,13 +5090,13 @@ function openPlotByIndex(el) {
   var plt = (proj.plots||[])[pli];
   if (!plt) return;
 
-  // Migrate old data
-  if (!plt.constructionExpenses) {
+  // Migrate old data — constructionExpenses only for house type
+  if (plt.type === 'house' && !plt.constructionExpenses) {
     plt.constructionExpenses = [{ id:'ce_0', desc:'Advance Construction', amount: plt.constructionCost||0, date:'' }];
-    plt.miscExpenses = [];
-    plt.otherExpenses = [];
     saveData();
   }
+  if (!plt.miscExpenses) { plt.miscExpenses = []; saveData(); }
+  if (!plt.otherExpenses) { plt.otherExpenses = []; saveData(); }
 
   var isSold = plt.status === 'sold';
   var typeLocked = !!(plt.salePrice || plt.constructionCost > 0 || (plt.partialPayments||[]).length > 0 || plt.buyer || plt.status !== 'planned');
@@ -5798,11 +5798,11 @@ function renderExpenditureScreen() {
 
     (proj.plots||[]).forEach(function(plt) {
       totalPlotsCnt++;
-      if (!plt.constructionExpenses) {
+      if (plt.type === 'house' && !plt.constructionExpenses) {
         plt.constructionExpenses = [{ id:'ce_0', desc:'Advance Construction', amount: plt.constructionCost||0, date:'' }];
-        plt.miscExpenses = [];
-        plt.otherExpenses = [];
       }
+      if (!plt.miscExpenses) plt.miscExpenses = [];
+      if (!plt.otherExpenses) plt.otherExpenses = [];
       var constTotal = plt.type === 'house'
         ? (plt.constructionExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0) : 0;
       var miscTotal = (plt.miscExpenses||[]).reduce(function(s,e){ return s+Number(e.amount||0); },0);
@@ -8481,11 +8481,11 @@ function renderPL() {
 
     // Migrate old plots
     plots.forEach(function(plt) {
-      if (!plt.constructionExpenses) {
+      if (plt.type === 'house' && !plt.constructionExpenses) {
         plt.constructionExpenses = [{ id:'ce_0', desc:'Advance Construction', amount: plt.constructionCost||0, date:'' }];
-        plt.miscExpenses = [];
-        plt.otherExpenses = [];
       }
+      if (!plt.miscExpenses) plt.miscExpenses = [];
+      if (!plt.otherExpenses) plt.otherExpenses = [];
     });
 
     // Per-plot cost calculation
