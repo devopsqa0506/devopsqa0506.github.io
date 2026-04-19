@@ -1324,10 +1324,10 @@ input[type=number] { -moz-appearance:textfield; }
           </div>
           <button class="btn ghost sm" onclick="changeClientId()">Set</button>
         </div>
-        <div class="si"><div class="si-ico">📊</div><div class="si-body"><div class="si-t">Google Sheet</div><div class="si-s">Data ఇక్కడ save అవుతుంది</div><div class="si-v" id="cfg-sheet">Not configured</div></div><button class="btn ghost sm" onclick="openSheetInBrowser()">Open ↗</button></div>
-        <div class="si"><div class="si-ico">🔗</div><div class="si-body"><div class="si-t">Apps Script URL</div><div class="si-s">Script URL update చేయండి</div><div class="si-v" id="cfg-script" style="font-size:11px">Not configured</div></div><button class="btn ghost sm" onclick="changeScriptUrl()">Change</button></div>
-        <div class="si"><div class="si-ico">🤖</div><div class="si-body"><div class="si-t">Gemini AI Keys</div><div class="si-s">Free — 15 req/min per key. Multiple keys = more quota</div><div class="si-v" id="cfg-ai">Not configured</div></div><button class="btn ghost sm" onclick="openModal('manage-keys')">Manage</button></div>
-        <div class="si"><div class="si-ico">☁️</div><div class="si-body"><div class="si-t">Sync Status</div><div class="si-s" id="cfg-sync">Last sync: Never</div></div><button class="btn ghost sm" onclick="syncNow()">Sync</button></div>
+        <div class="si"><div class="si-ico">📊</div><div class="si-body"><div class="si-t">Google Sheet</div><div class="si-s">Data ఇక్కడ save అవుతుంది</div><div class="si-v" id="cfg-sheet">Not configured</div></div><button class="btn teal sm" onclick="openSheetInBrowser()">Open ↗</button></div>
+        <div class="si"><div class="si-ico">🔗</div><div class="si-body"><div class="si-t">Apps Script URL</div><div class="si-s">Script URL update చేయండి</div><div class="si-v" id="cfg-script" style="font-size:11px">Not configured</div></div><button class="btn amb sm" onclick="changeScriptUrl()">Change</button></div>
+        <div class="si"><div class="si-ico">🤖</div><div class="si-body"><div class="si-t">Gemini AI Keys</div><div class="si-s">Free — 15 req/min per key. Multiple keys = more quota</div><div class="si-v" id="cfg-ai">Not configured</div></div><button class="btn amb sm" onclick="openModal('manage-keys')">Manage</button></div>
+        <div class="si"><div class="si-ico">☁️</div><div class="si-body"><div class="si-t">Sync Status</div><div class="si-s" id="cfg-sync">Last sync: Never</div></div><button class="btn teal sm" onclick="syncNow()">Sync ↻</button></div>
         <div class="si" style="border-color:rgba(58,232,200,0.3)">
           <div class="si-ico">📁</div>
           <div class="si-body">
@@ -1335,10 +1335,10 @@ input[type=number] { -moz-appearance:textfield; }
             <div class="si-s">Documents, Bills, Registrations saved here</div>
           </div>
           <div style="display:flex;gap:6px">
-            <button class="btn ghost sm" style="color:var(--teal);border-color:rgba(58,232,200,0.3)" onclick="getDriveUrl()">Open ↗</button>
+            <button class="btn teal sm" onclick="getDriveUrl()">Open ↗</button>
           </div>
         </div>
-        <div class="si"><div class="si-ico">📱</div><div class="si-body"><div class="si-t">New Phone Setup</div><div class="si-s">Same Sheet ID + Gemini Key enter చేయండి</div></div><button class="btn ghost sm" onclick="showGuide()">Guide</button></div>
+        <div class="si"><div class="si-ico">📱</div><div class="si-body"><div class="si-t">New Phone Setup</div><div class="si-s">Same Sheet ID + Gemini Key enter చేయండి</div></div><button class="btn amb sm" onclick="showGuide()">Guide</button></div>
         <div class="si" style="border-color:rgba(58,232,200,0.3);background:rgba(58,232,200,0.03)">
           <div class="si-ico">📲</div>
           <div class="si-body">
@@ -1355,7 +1355,7 @@ input[type=number] { -moz-appearance:textfield; }
         <button class="btn amb sm full" style="margin-bottom:9px" onclick="clearLocalAndResync()">🔄 Clear Local Data &amp; Resync from Sheet</button>
         <button class="btn rose sm full" style="margin-bottom:9px" onclick="clearAll()">🗑️ Clear ALL Data</button>
         <button class="btn ghost sm full" style="color:var(--tx3)" onclick="resetApp()">🔄 Reconfigure from scratch</button>
-        <button class="btn ghost sm full" style="color:var(--rose);margin-top:6px" onclick="signOut()">🚪 Sign Out</button>
+        <button class="btn rose sm full" style="margin-top:6px" onclick="signOut()">🚪 Sign Out</button>
       </div>
     </div>
 
@@ -5273,7 +5273,7 @@ function openPlotByIndex(el) {
   var centRate = proj.totalCents > 0 ? (Number(proj.landCost||0) / proj.totalCents) : 0;
   var landCostForPlot = centRate * Number(plt.sizeInCents||0);
   var landBalance = landCostForPlot - landAdvanceForPlot;
-  var investLabel = plt.type === 'house' ? '💰 Cost Basis (Land + Build)' : '💰 Cost Basis (Land + Misc)';
+  var investLabel = plt.type === 'house' ? '💰 Total Investment (Land + Build)' : '💰 Total Investment (Land + Misc)';
   body += '<div style="background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;margin-top:8px">'
     +'<div style="display:flex;justify-content:space-between">'
       +'<span style="font-size:12px;color:var(--tx2)">'+investLabel+'</span>'
@@ -8739,9 +8739,11 @@ function saveProjExpense() {
   if (alreadyExists) { toast('Already saved','info'); return; }
   state.projExpenses.push(exp);
   saveData();
-  // Route through syncProjectPlots so overhead expenses survive future plot-level syncs
-  // (direct pushToSheet gets wiped when syncProjectPlots fires deleteFromSheet on same projId)
-  syncProjectPlots(projId);
+  // Direct append — avoids duplicate rows caused by syncProjectPlots delete+reinsert race
+  pushToSheet('ProjectExpenses',
+    ['id','projId','plotId','type','category','desc','amount','date'],
+    [exp.id, projId, '', 'overhead', exp.category||'Overhead', exp.desc||'', exp.amount, exp.date]
+  );
   closeModal('add-proj-expense');
   document.getElementById('pexp-amount').value='';
   document.getElementById('pexp-desc').value='';
