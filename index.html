@@ -4909,6 +4909,17 @@ function saveProject() {
     state.projects.push(proj);
   }
 
+  // Delete expenses + income for removed plots
+  if (editId && existingPlots.length && cfg.scriptUrl && cfg.sheetId) {
+    var keptIds = proj.plots.map(function(p){ return p.id; });
+    existingPlots.forEach(function(ep) {
+      if (keptIds.indexOf(ep.id) === -1) {
+        deleteFromSheet('ProjectExpenses', 'plotId', ep.id);
+        deleteFromSheet('ProjectIncome', 'plotId', ep.id);
+      }
+    });
+  }
+
   // Save land payment rows
   if (!state.landPayments) state.landPayments = [];
   if (editId) {
