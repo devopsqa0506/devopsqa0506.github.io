@@ -2770,11 +2770,24 @@ function mergeSheetData(sheetData) {
   var peData = sheetData.ProjectExpenses || [];
   var peHdrs = peData[0] || []; var peRows = peData.slice(1);
   if (!state.projExpenses) state.projExpenses = [];
+  // Build valid IDs — reject orphaned expenses from deleted projects/plots
+  var validProjIds = new Set((state.projects||[]).map(function(p){ return p.id; }));
+  var validPlotIds = new Set();
+  (state.projects||[]).forEach(function(p){ (p.plots||[]).forEach(function(pl){ validPlotIds.add(pl.id); }); });
+  // Purge local orphans
+  state.projExpenses = state.projExpenses.filter(function(e){
+    if (e.projId && !validProjIds.has(e.projId)) return false;
+    if (e.plotId && !validPlotIds.has(e.plotId)) return false;
+    return true;
+  });
   var localPeIds = new Set(state.projExpenses.map(function(e){ return e.id; }));
   peRows.forEach(function(r){
     var o={}; peHdrs.forEach(function(h,i){ o[h]=r[i]; });
     o.amount=Math.round(Number(o.amount)||0);
-    if (o.id && !localPeIds.has(o.id)) {
+    if (!o.id) return;
+    if (o.projId && !validProjIds.has(o.projId)) return;
+    if (o.plotId && !validPlotIds.has(o.plotId)) return;
+    if (!localPeIds.has(o.id)) {
       state.projExpenses.push(o);
       localPeIds.add(o.id);
     }
