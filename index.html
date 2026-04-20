@@ -5377,6 +5377,9 @@ function openPlotByIndex(el) {
   +'</div>';
 
   document.getElementById('house-modal-body').innerHTML = body;
+  var _hm = document.getElementById('house-modal');
+  _hm.dataset.pi = pi;
+  _hm.dataset.pli = pli;
   openModal('house-modal');
 }
 
@@ -5646,6 +5649,7 @@ function updatePlotField(el, field, type) {
   }
   // Refresh Expenditure screen to update plot status box and profit
   if (field === 'status') {
+    syncProjectPlots(state.projects[pi].id);
     renderExpenditureScreen();
   }
 }
