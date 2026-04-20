@@ -5120,6 +5120,8 @@ function deleteProjByIndex(el) {
   state.projects.splice(idx, 1);
   state.landPayments = (state.landPayments||[]).filter(function(p){ return p.projId !== projId; });
   state.plotLandPayments = (state.plotLandPayments||[]).filter(function(p){ return p.projectId !== projId; });
+  state.projExpenses = (state.projExpenses||[]).filter(function(e){ return e.projId !== projId; });
+  state.projIncome   = (state.projIncome||[]).filter(function(i){ return i.projId !== projId; });
   
   saveData();
   renderProjects();
