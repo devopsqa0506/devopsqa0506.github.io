@@ -5466,6 +5466,8 @@ function syncProjectPlots(projId) {
     // 1) plot-level: constructionExpenses / miscExpenses / otherExpenses (inside plots)
     // 2) project-level overhead: state.projExpenses entries added via Add Expense modal
     deleteFromSheet('ProjectExpenses', 'projId', projId);
+    // Second delete at 2s — catches race-surviving stale rows
+    setTimeout(function() { deleteFromSheet('ProjectExpenses', 'projId', projId); }, 2000);
     setTimeout(function() {
       // Re-read proj at execute time — state may have changed during debounce window
       var _proj = (state.projects||[]).find(function(p){ return p.id===projId; });
@@ -5498,7 +5500,7 @@ function syncProjectPlots(projId) {
           rows:expRows
         })
       }).catch(function(){});
-    }, 1500);
+    }, 4000);
 
     syncPlotLandPayments(projId);
   }, 600); // 600ms debounce — collapses consecutive calls
