@@ -5770,7 +5770,6 @@ function updateConstructionExpense(pi, pli, idx, field, type, el) {
   if (!plt.constructionExpenses || !plt.constructionExpenses[idx]) return;
   plt.constructionExpenses[idx][field] = type==='num' ? parseVal(el.value) : el.value;
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   if (field==='amount') { recalcHouseTotals(pi, pli); updateAdvancesReceivedTotal(); }
 }
 function deleteConstructionExpense(pi, pli, idx) {
@@ -5798,7 +5797,6 @@ function updateMiscExpense(pi, pli, idx, field, type, el) {
   if (!plt.miscExpenses || !plt.miscExpenses[idx]) return;
   plt.miscExpenses[idx][field] = type==='num' ? parseVal(el.value) : el.value;
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   if (field==='amount') { recalcHouseTotals(pi, pli); updateAdvancesReceivedTotal(); }
 }
 function deleteMiscExpense(pi, pli, idx) {
@@ -5826,7 +5824,6 @@ function updateOtherExpense(pi, pli, idx, field, type, el) {
   if (!plt.otherExpenses || !plt.otherExpenses[idx]) return;
   plt.otherExpenses[idx][field] = type==='num' ? parseVal(el.value) : el.value;
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   if (field==='amount') { recalcHouseTotals(pi, pli); updateAdvancesReceivedTotal(); }
 }
 function deleteOtherExpense(pi, pli, idx) {
