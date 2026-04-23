@@ -5761,7 +5761,6 @@ function addConstructionExpense(pi, pli) {
   if (!plt.constructionExpenses) plt.constructionExpenses = [];
   plt.constructionExpenses.push({ id:'ce_'+Date.now(), desc:'', amount:0, date:'' });
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   updateAdvancesReceivedTotal();
   openPlotByIndex({dataset:{proj:String(pi),plot:String(pli)}});
 }
@@ -5788,7 +5787,6 @@ function addMiscExpense(pi, pli) {
   if (!plt.miscExpenses) plt.miscExpenses = [];
   plt.miscExpenses.push({ id:'me_'+Date.now(), type:'Registration', amount:0, date:'' });
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   updateAdvancesReceivedTotal();
   openPlotByIndex({dataset:{proj:String(pi),plot:String(pli)}});
 }
@@ -5815,7 +5813,6 @@ function addOtherExpense(pi, pli) {
   if (!plt.otherExpenses) plt.otherExpenses = [];
   plt.otherExpenses.push({ id:'oe_'+Date.now(), desc:'', amount:0, date:'' });
   saveData();
-  syncProjectPlots(state.projects[pi].id);
   updateAdvancesReceivedTotal();
   openPlotByIndex({dataset:{proj:String(pi),plot:String(pli)}});
 }
