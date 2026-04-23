@@ -4789,7 +4789,7 @@ function renderPlotRows() {
   _pendingPlots.forEach(function(row, i) {
     html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
       +'<input class="fi fi-mono" type="text" placeholder="No." value="'+escH(row.plotNo)+'" oninput="_pendingPlots['+i+'].plotNo=this.value" style="flex:0 0 52px;margin-bottom:0;font-size:13px;text-align:center">'
-      +'<input class="fi fi-mono" type="text" inputmode="numeric" placeholder="Cents" value="'+(row.sizeInCents||'')+'" oninput="_pendingPlots['+i+'].sizeInCents=Math.round(Number(this.value)||0)" onblur="_pendingPlots['+i+'].sizeInCents=Math.round(Number(this.value)||0)" style="flex:0 0 70px;margin-bottom:0;font-size:13px">'
+      +'<input class="fi fi-mono" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Cents" value="'+(row.sizeInCents||'')+'" oninput="this.value=this.value.replace(/[^0-9.]/g,"");_pendingPlots['+i+'].sizeInCents=Number(this.value)||0" onblur="_pendingPlots['+i+'].sizeInCents=Math.round(Number(this.value)||0)" style="flex:0 0 70px;margin-bottom:0;font-size:13px">'
       +'<select oninput="_pendingPlots['+i+'].type=this.value" style="flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;margin-bottom:0">'
         +'<option value="plot" '+(row.type==='plot'?'selected':'')+'>📋 Plot (sell)</option>'
         +'<option value="house" '+(row.type==='house'?'selected':'')+'>🏗️ House (build)</option>'
@@ -4913,6 +4913,15 @@ function saveProject() {
     }
     if (!plt.adjustmentHistory) plt.adjustmentHistory = [];
   });
+
+  // Validate: sum of plot cents must not exceed project totalCents
+  if (proj.totalCents > 0) {
+    var _sumPlotCents = proj.plots.reduce(function(s,p){ return s + Number(p.sizeInCents||0); }, 0);
+    if (_sumPlotCents > proj.totalCents) {
+      toast('Plot cents total (' + _sumPlotCents + ') exceeds project cents (' + proj.totalCents + ')!', 'err');
+      return;
+    }
+  }
 
   if (!state.projects) state.projects = [];
   if (editId) {
@@ -5189,7 +5198,7 @@ function openPlotByIndex(el) {
     +'<div><label class="fl">Plot No</label>'
       +'<input type="text" class="fi fi-mono" value="'+escH(plt.plotNo||'')+'" placeholder="1 / A1" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'plotNo\',\'text\')" style="text-align:center"></div>'
     +'<div><label class="fl">Size (Cents)</label>'
-      +'<input type="text" inputmode="numeric" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
+      +'<input type="number" min="0" step="0.01" inputmode="decimal" class="fi fi-mono" value="'+(plt.sizeInCents||'')+'" placeholder="3" data-pi="'+pi+'" data-pli="'+pli+'" onchange="updatePlotField(this,\'sizeInCents\',\'num\')" onblur="updatePlotField(this,\'sizeInCents\',\'num\')"></div>'
   +'</div>';
 
   // Type
@@ -5640,6 +5649,16 @@ function updatePlotField(el, field, type) {
   state.projects[pi].plots[pli][field] = type==='num' ? Math.round(Number(String(el.value).replace(/,/g,''))||0) : el.value;
   if (field === 'sizeInCents') {
     var _proj = state.projects[pi];
+    if (_proj.totalCents > 0) {
+      var _incomingCents = Number(String(el.value).replace(/[^0-9.]/g,''))||0;
+      var _otherSum = _proj.plots.reduce(function(s,p,ix){ return ix===pli?s:s+Number(p.sizeInCents||0); },0);
+      if (_otherSum + _incomingCents > _proj.totalCents) {
+        var _cap = Math.max(0, _proj.totalCents - _otherSum);
+        toast('Max ' + _cap + ' cents remaining', 'err');
+        el.value = _cap;
+        state.projects[pi].plots[pli].sizeInCents = _cap;
+      }
+    }
     var _cents = Number(state.projects[pi].plots[pli].sizeInCents||0);
     var _rate = (_proj.totalCents > 0) ? (Number(_proj.landCost||0) / _proj.totalCents) : 0;
     var _lc = Math.round(_rate * _cents);
