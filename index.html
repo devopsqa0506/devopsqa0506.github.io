@@ -2787,6 +2787,7 @@ function mergeSheetData(sheetData) {
     if (!o.id) return;
     if (o.projId && !validProjIds.has(o.projId)) return;
     if (o.plotId && !validPlotIds.has(o.plotId)) return;
+    if (o.type !== 'overhead') return; // plot-level rows belong inside plt, not state.projExpenses
     if (!localPeIds.has(o.id)) {
       state.projExpenses.push(o);
       localPeIds.add(o.id);
@@ -5507,7 +5508,7 @@ function syncProjectPlots(projId) {
         });
       });
       // Project-level overhead expenses (Add Expense modal → state.projExpenses)
-      (state.projExpenses||[]).filter(function(e){ return e.projId===projId; }).forEach(function(exp) {
+      (state.projExpenses||[]).filter(function(e){ return e.projId===projId && !/^(ce_|me_|oe_)/.test(e.id); }).forEach(function(exp) {
         expRows.push([exp.id, projId, '', 'overhead', exp.category||'Overhead', exp.desc||'', exp.amount||0, exp.date||'']);
       });
       fetch(cfg.scriptUrl+'?action=batchAppend', {
@@ -8817,4 +8818,4 @@ function populateIncomeProjectSelector() {
 init();
 </script>
 </body>
-</html>
+</html>v
