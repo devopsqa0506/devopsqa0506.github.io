@@ -8670,13 +8670,19 @@ function renderPL() {
       }
     });
 
+    // Add project-level income entries (customer payments logged via income module)
+    soldReceived += (state.projIncome||[]).filter(function(i){ return i.projId===proj.id; })
+                    .reduce(function(s,i){ return s+Number(i.amount||0); },0);
+
     // Manual project expenses (overhead/admin)
     var manualExp = (state.projExpenses||[]).filter(function(e){ return e.projId===proj.id; })
                     .reduce(function(s,e){ return s+Number(e.amount||0); },0);
 
-    var costIncurred = landForCalc + projConstCost + projMiscOther + manualExp;
-    var grossProfit  = soldRevenue - soldCOGS - manualExp;
-    var gpColor      = grossProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
+    var costIncurred     = landForCalc + projConstCost + projMiscOther + manualExp;
+    var grossProfit      = soldRevenue - soldCOGS;
+    var operatingProfit  = grossProfit - manualExp;
+    var gpColor          = grossProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
+    var opColor          = operatingProfit >= 0 ? 'var(--sage)' : 'var(--rose)';
     var outstanding  = Math.max(landCostTotal - landPaid, 0);
     var roi          = (soldRevenue > 0 && soldCOGS > 0)
       ? ((soldRevenue - soldCOGS) / soldCOGS * 100).toFixed(1) + '%' : '—';
@@ -8710,8 +8716,10 @@ function renderPL() {
         +'<div class="pl-row"><span class="pl-lbl">💰 Revenue (Sold plots)</span><span class="pl-val" style="color:var(--sage)">'+rup(soldRevenue)+' <span style="font-size:10px;color:var(--amb)">('+shortAmt(soldRevenue)+')</span></span></div>'
         +'<div class="pl-row"><span class="pl-lbl">✅ Received So Far</span><span class="pl-val" style="color:var(--teal)">'+rup(soldReceived)+' <span style="font-size:10px;color:var(--rose)">('+shortAmt(soldReceived)+')</span></span></div>'
         +(soldReceived < soldRevenue ? '<div class="pl-row"><span class="pl-lbl" style="color:var(--tx3)">Pending Collection</span><span class="pl-val" style="color:var(--amb)">'+rup(soldRevenue-soldReceived)+' <span style="font-size:10px;color:var(--sky)">('+shortAmt(soldRevenue-soldReceived)+')</span></span></div>' : '')
-        +'<div class="pl-row"><span class="pl-lbl">📊 COGS (Sold plots cost)</span><span class="pl-val" style="color:var(--rose)">'+rup(soldCOGS)+' <span style="font-size:10px;color:var(--teal)">('+shortAmt(soldCOGS)+')</span></span></div>'
+        +'<div class="pl-row"><span class="pl-lbl">📊 Cost of Sold Plots</span><span class="pl-val" style="color:var(--rose)">'+rup(soldCOGS)+' <span style="font-size:10px;color:var(--teal)">('+shortAmt(soldCOGS)+')</span></span></div>'
         +'<div class="pl-row total" style="background:var(--s3);border-radius:8px;padding:8px 10px;margin-top:4px"><span class="pl-lbl" style="font-size:14px">Gross Profit</span><span class="pl-val" style="font-size:15px;color:'+gpColor+'">'+(grossProfit>=0?'+':'')+rup(grossProfit)+' <span style="font-size:11px;color:var(--sage)">('+shortAmt(grossProfit)+')</span></span></div>'
+        +(manualExp ? '<div class="pl-row" style="margin-top:4px"><span class="pl-lbl" style="color:var(--tx3)">📤 Less: Overhead/Admin</span><span class="pl-val" style="color:var(--rose)">-'+rup(manualExp)+' <span style="font-size:10px;color:var(--sage)">('+shortAmt(manualExp)+')</span></span></div>'
+        +'<div class="pl-row total" style="background:rgba(58,232,200,0.06);border:1px solid rgba(58,232,200,0.2);border-radius:8px;padding:8px 10px;margin-top:4px"><span class="pl-lbl" style="font-size:14px">Operating Profit</span><span class="pl-val" style="font-size:15px;color:'+opColor+'">'+(operatingProfit>=0?'+':'')+rup(operatingProfit)+' <span style="font-size:11px;color:var(--teal)">('+shortAmt(operatingProfit)+')</span></span></div>' : '')
       +'</div>';
     } else {
       html += '<div style="background:rgba(232,184,74,0.06);border:1px solid rgba(232,184,74,0.2);border-radius:9px;padding:8px 12px;margin-top:8px;text-align:center">'
@@ -8739,7 +8747,7 @@ function renderPL() {
       +(hasSales ? '<div class="fin-summary" style="margin-top:8px">'
         +'<div class="fsum-box"><div class="fsum-lbl">Revenue (Sold)</div><div class="fsum-val" style="color:var(--sage)">'+rup(allRevenue)+' <span style="font-size:11px;font-weight:600;color:var(--amb)">('+shortAmt(allRevenue)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl">Received So Far</div><div class="fsum-val" style="color:var(--teal)">'+rup(allReceived)+' <span style="font-size:11px;font-weight:600;color:var(--rose)">('+shortAmt(allReceived)+')</span></div></div>'
-        +'<div class="fsum-box"><div class="fsum-lbl">Gross Profit</div><div class="fsum-val" style="color:'+ogColor+'">'+(overallGross>=0?'+':'')+rup(overallGross)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(overallGross)+')</span></div></div>'
+        +'<div class="fsum-box"><div class="fsum-lbl">Operating Profit</div><div class="fsum-val" style="color:'+ogColor+'">'+(overallGross>=0?'+':'')+rup(overallGross)+' <span style="font-size:11px;font-weight:600;color:var(--sky)">('+shortAmt(overallGross)+')</span></div></div>'
         +'<div class="fsum-box"><div class="fsum-lbl" style="font-weight:700">Net Profit</div><div class="fsum-val" style="color:'+onColor+';font-size:18px">'+(overallNet>=0?'+':'')+rup(overallNet)+' <span style="font-size:12px;font-weight:600;color:var(--amb)">('+shortAmt(overallNet)+')</span></div></div>'
       +'</div>' : '<div style="padding:8px 0;font-size:12px;color:var(--tx3);text-align:center">Mark plots as Sold to see Revenue &amp; Profit</div>')
     +'</div>';
