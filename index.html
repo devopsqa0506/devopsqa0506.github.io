@@ -8670,10 +8670,6 @@ function renderPL() {
       }
     });
 
-    // Add project-level income entries (customer payments logged via income module)
-    soldReceived += (state.projIncome||[]).filter(function(i){ return i.projId===proj.id; })
-                    .reduce(function(s,i){ return s+Number(i.amount||0); },0);
-
     // Manual project expenses (overhead/admin)
     var manualExp = (state.projExpenses||[]).filter(function(e){ return e.projId===proj.id; })
                     .reduce(function(s,e){ return s+Number(e.amount||0); },0);
