@@ -5917,7 +5917,7 @@ function renderExpenditureScreen() {
   var totalLandCostRemaining = 0;
 
   (state.loanPayments||[]).forEach(function(lp){
-    totalInterestPaid += Number(lp.interest||0);
+    totalInterestPaid += Number(lp.interestAmount||0);
   });
 
   projects.forEach(function(proj) {
@@ -8611,11 +8611,11 @@ function renderPL() {
   }
 
   // Company-wide finance figures
-  var totalInterestPaid = (state.loanPayments||[]).reduce(function(s,p){ return s+Number(p.interestPart||0); },0);
+  var totalInterestPaid = (state.loanPayments||[]).reduce(function(s,p){ return s+Number(p.interestAmount||0); },0);
   var totalBorrowed     = loans.reduce(function(s,l){ return s+Number(l.principal||0); },0);
   var totalOutstanding  = loans.reduce(function(s,l){
     var pmts = (state.loanPayments||[]).filter(function(p){ return p.loanId===l.id; });
-    var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalPart||0); },0);
+    var paid = pmts.reduce(function(ss,p){ return ss+Number(p.principalAmount||0); },0);
     return s + Math.max(Number(l.principal||0) - paid, 0);
   }, 0);
 
