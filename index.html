@@ -5241,7 +5241,7 @@ function openPlotByIndex(el) {
         : '<input type="text" class="fi" value="'+escH(ce.desc||'')+'" placeholder="Description" '
             +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'desc\',\'text\',this)" style="font-size:12px">')
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(ce.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'ce-w-'+ceIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value))" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'ce-w-'+ceIdx+'\')" style="font-size:12px">'
         +'<div id="ce-w-'+ceIdx+'" style="font-size:11px;font-weight:600;color:var(--sky);margin-top:2px;min-height:14px">'+(ce.amount?amtWords(ce.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(ce.date||'')+'" '
         +'onchange="updateConstructionExpense('+pi+','+pli+','+ceIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5279,7 +5279,7 @@ function openPlotByIndex(el) {
       +miscTypes.map(function(t){ return '<option value="'+t.v+'" '+(me.type===t.v?'selected':'')+'>'+t.l+'</option>'; }).join('')
       +'</select>'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(me.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'me-w-'+meIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateMiscExpense('+pi+','+pli+','+meIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value))" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'me-w-'+meIdx+'\')" style="font-size:12px">'
         +'<div id="me-w-'+meIdx+'" style="font-size:11px;font-weight:600;color:var(--teal);margin-top:2px;min-height:14px">'+(me.amount?amtWords(me.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(me.date||'')+'" '
         +'onchange="updateMiscExpense('+pi+','+pli+','+meIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5296,7 +5296,7 @@ function openPlotByIndex(el) {
       +'<input type="text" class="fi" value="'+escH(oe.desc||'')+'" placeholder="Description" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'desc\',\'text\',this)" style="font-size:12px">'
       +'<div><input type="text" inputmode="numeric" class="fi fi-mono" value="'+fmtVal(oe.amount)+'" placeholder="Amount" '
-        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
+        +'onfocus="this.value=this.value.replace(/,/g,\'\')" onchange="this.value=fmtVal(parseVal(this.value));updateOtherExpense('+pi+','+pli+','+oeIdx+',\'amount\',\'num\',this)" onblur="this.value=fmtVal(parseVal(this.value))" oninput="var c=this.selectionStart,v=this.value.replace(/,/g,\'\'),n=fmtIN(Number(v)||0);if(v&&!isNaN(v)){this.value=n;try{this.setSelectionRange(c+(n.length-v.length),c+(n.length-v.length));}catch(e){}}showAmtLabel(this.value.replace(/,/g,\'\'),\'oe-w-'+oeIdx+'\')" style="font-size:12px">'
         +'<div id="oe-w-'+oeIdx+'" style="font-size:11px;font-weight:600;color:var(--amb);margin-top:2px;min-height:14px">'+(oe.amount?amtWords(oe.amount):'')+'</div></div>'
       +'<input type="date" class="fi" value="'+(oe.date||'')+'" '
         +'onchange="updateOtherExpense('+pi+','+pli+','+oeIdx+',\'date\',\'text\',this)" style="font-size:12px">'
@@ -5526,7 +5526,7 @@ function syncProjectPlots(projId) {
           rows:expRows
         })
       }).catch(function(){});
-    }, 4000);
+    }, 1500);
 
     syncPlotLandPayments(projId);
   }, 600); // 600ms debounce — collapses consecutive calls
